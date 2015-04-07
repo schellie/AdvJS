@@ -56,7 +56,7 @@ var HNTSIZ  = 20;
 var HINTLC 	= new Array();
 var HINTED 	= new Array();
 var HINTS   = new Array();
-while(HINTS.push([]) < 20); // make 20 lines
+while (HINTS.push([]) < 20); // make 20 lines
 var HNTMAX  = 0; 
 
 //C	 35 MAGIC MESSAGES (MTEXT, MAGSIZ) .
@@ -67,8 +67,11 @@ var HNTMAX  = 0;
 var DSEEN 	= new Array();
 var DLOC 	= new Array();
 var ODLOC 	= new Array();
-var HNAME	= new Array();
-	
+var DFLAG   = 0;
+var DALTLC  = 18;
+var CHLOC   = 114;
+var CHLOC2  = 140;
+
 // MNEMONICS
 var KEYS, LAMP, GRATE, CAGE, ROD, ROD2, STEPS, BIRD, DOOR, PILLOW, SNAKE;
 var FISSUR, TABLET, CLAM, OYSTER, MAGZIN, DWARF, KNIFE, FOOD, BOTTLE;
@@ -77,14 +80,55 @@ var BEAR, MESSAG, VEND, BATTER, NUGGET, COINS, CHEST, EGGS, TRIDNT, VASE;
 var EMRALD, PYRAM, PEARL, RUG, CHAIN, SPICES, BACK, LOOK, CAVE, ENTRNC;
 var DPRSSN, ENTER, VERBSAY, LOCK, THROW, FIND, INVENT;
 
-//I/O for html/js
+// Global variables
+var WZDARK; // SAYS WHETHER THE LOC HE'S LEAVING WAS DARK
+var LMWARN; // SAYS WHETHER HE'S BEEN WARNED ABOUT LAMP GOING DIM
+var CLOSNG; // SAYS WHETHER ITS CLOSING TIME YET
+var PANIC; // SAYS WHETHER HE'S FOUND OUT HE'S TRAPPED IN THE CAVE
+var CLOSED; // SAYS WHETHER WE'RE ALL THE WAY CLOSED
+var GAVEUP; // SAYS WHETHER HE EXITED VIA "QUIT"
+var SCORNG; // SCORNG INDICATES TO THE SCORE ROUTINE WHETHER WE'RE DOING A "SCORE" COMMAND
+var DEMO; // TRUE IF THIS IS A PRIME-TIME DEMONSTRATION GAME
+var YEA; // RANDOM YES/NO REPLY
 
-//Display a string 
-var out = function(s) {
-	var textarea = document.getElementById('displayText');
-	textarea.value += s + '\n';
-	textarea.scrollTop = textarea.scrollHeight;
-};
+// OTHER RANDOM FLAGS AND COUNTERS, AS FOLLOWS:
+var TURNS; // TALLIES HOW MANY COMMANDS HE'S GIVEN (IGNORES YES/NO) 
+var LIMIT; // LIFETIME OF LAMP (NOT SET HERE) 
+var IWEST; // HOW MANY TIMES HE'S SAID "WEST" INSTEAD OF "W"
+var KNFLOC; // 0 IF NO KNIFE HERE, LOC IF KNIFE HERE, -1 AFTER CAVEAT
+var DETAIL; // HOW OFTEN WE'VE SAID "NOT ALLOWED TO GIVE MORE DETAIL"
+var ABBNUM; // HOW OFTEN WE SHOULD PRINT NON-ABBREVIATED DESCRIPTIONS
+var MAXDIE; // NUMBER OF REINCARNATION MESSAGES AVAILABLE (UP TO 5) 
+var NUMDIE; // NUMBER OF TIMES KILLED SO FAR
+var HOLDNG; // NUMBER OF OBJECTS BEING CARRIED
+var DKILL; // NUMBER OF DWARVES KILLED (UNUSED IN SCORING, NEEDED FOR MSG) 
+var FOOBAR; // CURRENT PROGRESS IN SAYING "FEE FIE FOE FOO".
+var BONUS; // USED TO DETERMINE AMOUNT OF BONUS IF HE REACHES CLOSING
+var CLOCK1; // NUMBER OF TURNS FROM FINDING LAST TREASURE TILL CLOSING
+var CLOCK2; // NUMBER OF TURNS FROM FIRST WARNING TILL BLINDING FLASH
+
+//DATA SETUP/0/,BLKLIN/ true/
+var SETUP = 0; // not useful??
+var BLKLIN = true;
+
+var HOLDNG;
+
+//used for magic ...
+var WKDAY;
+var WKEND;
+var HOLID;
+var HBEGIN;
+var HEND;
+var HNAME	= new Array();
+var SHORT;
+var MAGIC;
+var MAGNM;
+//... until here
+var LATNCY;
+var SAVED;
+var SAVET;
+var YES;
+var START;
 
 // STATEMENT FUNCTIONS
 
@@ -139,39 +183,49 @@ var PCT = function(n) { /** test ok **/
 	return (RAN(100) < n);
 };
 
-var WZDARK; // SAYS WHETHER THE LOC HE'S LEAVING WAS DARK
-var LMWARN; // SAYS WHETHER HE'S BEEN WARNED ABOUT LAMP GOING DIM
-var CLOSNG; // SAYS WHETHER ITS CLOSING TIME YET
-var PANIC; // SAYS WHETHER HE'S FOUND OUT HE'S TRAPPED IN THE CAVE
-var CLOSED; // SAYS WHETHER WE'RE ALL THE WAY CLOSED
-var GAVEUP; // SAYS WHETHER HE EXITED VIA "QUIT"
-var SCORNG; // SCORNG INDICATES TO THE SCORE ROUTINE WHETHER WE'RE DOING A "SCORE" COMMAND
-var DEMO; // TRUE IF THIS IS A PRIME-TIME DEMONSTRATION GAME
-var YEA; // RANDOM YES/NO REPLY
 
-//	DATA SETUP/0/,BLKLIN/ true/
-	var SETUP = 0;
-	var BLKLIN = true;
-
-	var HOLDNG;
-
-	//used for magic ...
-	var WKDAY;
-	var WKEND;
-	var HOLID;
-	var HBEGIN;
-	var HEND;
-	var SHORT;
-	var MAGIC;
-	var MAGNM;
-	//... until here
-	var LATNCY;
-	var SAVED;
-	var SAVET;
-	var YES;
-	var START;
 
 	
+//I/O for html/js
+var isTouch = (('ontouchstart' in window) || (navigator.msMaxTouchPoints > 0)); // touch device?
+var displayText; // area to output messages
+var commandLine; // area to input commands
+
+//Display a string 
+var out = function(s) { /** test ok **/
+	var textarea = document.getElementById('displayText');
+	textarea.value += s + '\n';
+	textarea.scrollTop = textarea.scrollHeight;
+};
+
+//Update the status bar
+var updateStatusBar = function(score, moves) { /** test ok **/
+	document.getElementById('statusScore').innerHTML = score;
+	document.getElementById('statusMoves').innerHTML = moves;
+};
+
+//Give focus to commandLine if not a touch device. 
+var giveCommandFocus = function() { /** test ok **/
+    if (!isTouch) commandLine.focus();
+};
+
+//Get command.
+var getCommand = function() { /** test ok **/
+    var text = commandLine.value;
+    commandLine.value = '';
+    out('\n' + '> ' + text);
+    //processCommand(text);
+    giveCommandFocus();
+};
+
+function processCommand(text){
+	 parseInput(text);
+	 processInput();
+
+	 if (normalInput) processEvents();
+	 updateStatusBar(SCORE, TURNS);
+}
+
 //C  DESCRIPTION OF THE DATABASE FORMAT
 //C
 //C
@@ -296,8 +350,15 @@ var setup = function() {
 	
 	var sections = new Array();
 	var LOC, OLDLOC = -1;
-	SETUP = 1;
-	
+
+	// setup I/O
+    commandLine = document.getElementById("commandLine");
+    // Command line listener
+    commandLine.onkeypress = function(event) {
+        if (event.keyCode == 13) getCommand();
+    };
+    displayText = document.getElementById('displayText');
+    
 	// Init tables
 	for (var i = 1; i <= 300; i++) {
 		if (i <= OBJSIZ) PTEXT[i] = 0;
@@ -349,7 +410,8 @@ var setup = function() {
 	setupTreasures();
 	clearHintStuff();
 	defineMnemonics();
-
+	initDwarves();
+	initGlobals();
 	//
 };
 
@@ -608,60 +670,45 @@ var defineMnemonics = function() {
 //C  SIXTH DWARF IS SPECIAL (THE PIRATE) .  HE ALWAYS STARTS AT HIS CHEST'S
 //C  EVENTUAL LOCATION INSIDE THE MAZE.  THIS LOC IS SAVED IN CHLOC FOR REF.
 //C  THE DEAD END IN THE OTHER MAZE HAS ITS LOC STORED IN CHLOC2.
-//
-//	CHLOC = 114
-//	CHLOC2 = 140
-		for (var I = 1; I <= 6; I++) { 
-//1700
-	DSEEN[I] =  false; }
-//	DFLAG = 0
-//	DLOC[1] = 19
-//	DLOC[2] = 27
-//	DLOC[3] = 33
-//	DLOC[4] = 44
-//	DLOC[5] = 64
-//	DLOC[6] = CHLOC
-//	DALTLC = 18
-//
-//C  OTHER RANDOM FLAGS AND COUNTERS, AS FOLLOWS:
-//C	TURNS	TALLIES HOW MANY COMMANDS HE'S GIVEN (IGNORES YES/NO) 
-//C	LIMIT	LIFETIME OF LAMP (NOT SET HERE) 
-//C	IWEST	HOW MANY TIMES HE'S SAID "WEST" INSTEAD OF "W"
-//C	KNFLOC	0 IF NO KNIFE HERE, LOC IF KNIFE HERE, -1 AFTER CAVEAT
-//C	DETAIL	HOW OFTEN WE'VE SAID "NOT ALLOWED TO GIVE MORE DETAIL"
-//C	ABBNUM	HOW OFTEN WE SHOULD PRINT NON-ABBREVIATED DESCRIPTIONS
-//C	MAXDIE	NUMBER OF REINCARNATION MESSAGES AVAILABLE (UP TO 5) 
-//C	NUMDIE	NUMBER OF TIMES KILLED SO FAR
-//C	HOLDNG	NUMBER OF OBJECTS BEING CARRIED
-//C	DKILL	NUMBER OF DWARVES KILLED (UNUSED IN SCORING, NEEDED FOR MSG) 
-//C	FOOBAR	CURRENT PROGRESS IN SAYING "FEE FIE FOE FOO".
-//C	BONUS	USED TO DETERMINE AMOUNT OF BONUS IF HE REACHES CLOSING
-//C	CLOCK1	NUMBER OF TURNS FROM FINDING LAST TREASURE TILL CLOSING
-//C	CLOCK2	NUMBER OF TURNS FROM FIRST WARNING TILL BLINDING FLASH
-//C	LOGICALS WERE EXPLAINED EARLIER
-//
-//	TURNS = 0
-//	LMWARN =  false
-//	IWEST = 0
-//	KNFLOC = 0
-//	DETAIL = 0
-//	ABBNUM = 5
-		for (var I = 1; I <= 4; I++) {
-//1800
-	if (RTEXT[2*I+81] !=  0) MAXDIE = I+1; }
-//	NUMDIE = 0
-//	HOLDNG = 0
-//	DKILL = 0
-//	FOOBAR = 0
-//	BONUS = 0
-//	CLOCK1 = 30
-//	CLOCK2 = 50
-//	SAVED = 0
-//	CLOSNG =  false
-//	PANIC =  false
-//	CLOSED =  false
-//	GAVEUP =  false
-//	SCORNG =  false
+var initDwarves = function() {
+	CHLOC = 114;
+	CHLOC2 = 140;
+	for (var i = 1; i <= 6; i++) DSEEN[i] = false;
+	DFLAG = 0;
+	DLOC[1] = 19;
+	DLOC[2] = 27;
+	DLOC[3] = 33;
+	DLOC[4] = 44;
+	DLOC[5] = 64;
+	DLOC[6] = CHLOC;
+	DALTLC = 18;	
+};
+
+var initGlobals = function() {
+	TURNS = 0;
+	LMWARN = false;
+	IWEST = 0;
+	KNFLOC = 0;
+	DETAIL = 0;
+	ABBNUM = 5;
+	for (var i = 1; i <= 4; i++) {
+		if (RTEXT[2*i+81] != 0) MAXDIE = i+1; 
+	};
+	NUMDIE = 0;
+	HOLDNG = 0;
+	DKILL = 0;
+	FOOBAR = 0;
+	BONUS = 0;
+	CLOCK1 = 30;
+	CLOCK2 = 50;
+	SAVED = 0;
+	CLOSNG =  false;
+	PANIC =  false;
+	CLOSED =  false;
+	GAVEUP =  false;
+	SCORNG =  false;
+};
+
 //
 //C  IF SETUP = 1, REPORT ON AMOUNT OF ARRAYS ACTUALLY USED, TO PERMIT REDUCTIONS.
 //
