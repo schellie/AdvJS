@@ -2266,31 +2266,38 @@ var initGlobals = function() {
 
 // PRINT THE MESSAGE WHICH STARTS AT LINES(N).  PRECEDE IT WITH A BLANK LINE
 // UNLESS BLKLIN IS FALSE.
-var SPEAK = function(n) { /** test ok **/
-	if (n == 0) return;
-	if (LINES[n].substr(8,3) == '>$<') return;
+// screen: indicates direct write to screen 
+var SPEAK = function(n, screen) { /** retest **/
+	if (n == 0) return '';
+	if (LINES[n].substr(8,3) == '>$<') return '';
+	screen = typeof screen !== 'undefined' ? screen : true;
+	var mssg = '';
 	var k = n;
+	if (screen && BLKLIN) out('');
 	while (parseInt(LINES[k]) == parseInt(LINES[n])) {
-		out(LINES[k++].substr(8));
+		if (screen) out(LINES[k++].substr(8)); else mssg += LINES[k++].substr(8);
 	}
+	return mssg;
 };
 
-// FIND THE SKIP+1ST MESSAGE FROM MSG AND PRINT IT.  MSG SHOULD BE THE INDEX OF
-// THE INVENTORY MESSAGE FOR OBJECT.  (INVEN+N+1 MESSAGE IS PROP=N MESSAGE).
-var PSPEAK = function(msg, skip) { /** test ok **/
+//FIND THE SKIP+1ST MESSAGE FROM MSG AND PRINT IT.  MSG SHOULD BE THE INDEX OF
+//THE INVENTORY MESSAGE FOR OBJECT.  (INVEN+N+1 MESSAGE IS PROP=N MESSAGE).
+var PSPEAK = function(msg, skip, screen) {
 	var m = PTEXT[msg];
 	if (skip >= 0) m += skip + 1;
-	SPEAK(m);
+	return SPEAK(m, screen);
 };
 
-// PRINT THE I-TH "RANDOM" MESSAGE (SECTION 6 OF DATABASE).
-var RSPEAK = function(i) { /** test ok **/
-	if (i != 0) SPEAK(RTEXT[i]);
+//PRINT THE I-TH "RANDOM" MESSAGE (SECTION 6 OF DATABASE).
+var RSPEAK = function(i, screen) {
+	if (i != 0) return SPEAK(RTEXT[i], screen);
+	else return '';
 };
 
-// PRINT THE I-TH "MAGIC" MESSAGE (SECTION 12 OF DATABASE).
-var MSPEAK = function(i) { /** not used **/
-	if (i != 0) SPEAK(MTEXT[i]);
+//PRINT THE I-TH "MAGIC" MESSAGE (SECTION 12 OF DATABASE).
+var MSPEAK = function(i, screen) {
+	if (i != 0) return SPEAK(MTEXT[i], screen);
+	else return '';
 };
 
 /*
@@ -2347,41 +2354,26 @@ var MSPEAK = function(i) { /** not used **/
 
 
 //CALL YESX (BELOW) WITH MESSAGES FROM SECTION 6.
-var YES = function(X,Y,Z) {
-	return YESX(X,Y,Z,RSPEAK);
+var YES = function(x, y, z) { /** as this is the only one pointing to YESX, it can be incorporated **/
+	return YESX(x, y, z, RSPEAK);
 };
 
 //CALL YESX (BELOW) WITH MESSAGES FROM SECTION 12.
-var YESM = function(X,Y,Z) {
-	return YESX(X,Y,Z,MSPEAK);
+var YESM = function(x, y, z) { /** won't happen **/
+	return YESX(x, y, z, MSPEAK);
 };
-
-
-// LOGICAL FUNCTION YESX(X,Y,Z,SPK)
 
 // PRINT MESSAGE X, WAIT FOR YES/NO ANSWER.  IF YES, PRINT Y AND LEAVE YEA
 // TRUE; IF NO, PRINT Z AND LEAVE YEA FALSE.  SPK IS EITHER RSPEAK OR MSPEAK.
-var YES = function(X,Y,Z,spk) {
-	if (x != 0) spk(X);
-	return;
+var YESX = function(x, y, z, spk) {
+	var reply = false;
+	if (x != 0) {
+		reply = confirm(spk(x, false));
+		if (reply) { out('> Yes'); spk(y); }
+		else { out('> No'); spk(z); }
+	}
+	return reply;
 };
-/*
-	1	IF(X.NE.0)CALL SPK(X)
-		CALL GETIN(REPLY,JUNK1,JUNK2,JUNK3)
-		IF(REPLY.EQ.'YES'.OR.REPLY.EQ.'Y')GOTO 10
-		IF(REPLY.EQ.'NO'.OR.REPLY.EQ.'N')GOTO 20
-		TYPE 9
-	9	FORMAT(/' Please answer the question.')
-		GOTO 1
-	10	YESX=.TRUE.
-		IF(Y.NE.0)CALL SPK(Y)
-		RETURN
-	20	YESX=.FALSE.
-		IF(Z.NE.0)CALL SPK(Z)
-		RETURN
-		END
-*/
-
 
 	// SUBROUTINE A5TOA1(A,B,C,CHARS,LENG) - no need for unpacking characters
 
