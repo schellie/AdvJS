@@ -112,6 +112,12 @@ var SETUP = 0; // not useful??
 var BLKLIN = true;
 var LOC;
 var NEWLOC;
+var OLDLOC;
+var OLDLC2;
+var VERB;
+var OBJ;
+var WD1;
+var WD2;
 var IDONDX;
 var MXSCOR;
 var SCORE;
@@ -139,55 +145,55 @@ var START;
 // STATEMENT FUNCTIONS
 
 // TRUE IF THE OBJ IS BEING CARRIED
-var TOTING = function(obj) {
+function TOTING(obj) {
 	return PLACE[obj] == -1;
-};
+}
 
 // TRUE IF THE OBJ IS AT "LOC" (OR IS BEING CARRIED)
-var HERE = function(obj) {
+function HERE(obj) {
 	return PLACE[obj] == LOC || TOTING(obj);
-};
+}
 
 // TRUE IF ON EITHER SIDE OF TWO-PLACED OBJECT
-var AT = function(obj) {
+function AT(obj) {
 	return PLACE[obj] == LOC || FIXED[obj] == LOC;
-};
+}
 
-var LIQ2 = function(pbotl) { /** test ok **/
+function LIQ2(pbotl) { /** test ok **/
 	return (1-pbotl)*WATER + (pbotl/2>>0)*(WATER+OIL);
-};
+}
 
 // OBJECT NUMBER OF LIQUID IN BOTTLE
-var LIQ = function() { /** test ok **/
+function LIQ() { /** test ok **/
 	return LIQ2(Math.max(PROP[BOTTLE], -1-PROP[BOTTLE]));
-};
+}
 
 // OBJECT NUMBER OF LIQUID (IF ANY) AT LOC
-var LIQLOC = function(loc) { /** test ok **/
+function LIQLOC(loc) { /** test ok **/
 	var c1 = (COND[loc]/2>>0)*2,
 		c2 = (COND[loc]/4>>0);
 	return LIQ2(((c1%8)-5) * (c2%2) + 1);
-};
+}
 
 // TRUE IF COND(L) HAS BIT N SET (BIT 0 IS UNITS BIT)
-var BITSET = function(l, n) {
+function BITSET(l, n) {
 	return ((COND[L] & 1<<n) != 0);
-};
+}
 
 // TRUE IF LOC MOVES WITHOUT ASKING FOR INPUT (COND=2)
-var FORCED = function(loc) { /** test ok **/
+function FORCED(loc) { /** test ok **/
 	return (COND[LOC] == 2);
-};
+}
 
 // TRUE IF LOCATION "LOC" IS DARK
-var DARK = function() { /** test ok **/
+function DARK() { /** test ok **/
 	return ((COND[LOC] % 2) == 0) && ((PROP[LAMP] == 0) || !HERE(LAMP));
-};
+}
 
 // TRUE N% OF THE TIME (N INTEGER FROM 0 TO 100)
-var PCT = function(n) { /** test ok **/
+function PCT(n) { /** test ok **/
 	return (RAN(100) < n);
-};
+}
 
 
 
@@ -203,18 +209,18 @@ function out(s) { /** test ok **/
 	displayText = document.getElementById('displayText');
 	displayText.value += s + '\n';
 	displayText.scrollTop = displayText.scrollHeight;
-};
+}
 
 //Update the status bar
 function updateStatusBar(score, moves) { /** test ok **/
 	document.getElementById('statusScore').innerHTML = score;
 	document.getElementById('statusMoves').innerHTML = moves;
-};
+}
 
 //Give focus to commandLine if not a touch device. 
 function giveCommandFocus() { /** test ok **/
     if (!isTouch) commandLine.focus();
-};
+}
 
 //Get command.
 function getCommand() { /** test ok **/
@@ -223,7 +229,7 @@ function getCommand() { /** test ok **/
     out('\n' + '> ' + text);
     //processCommand(text);
     giveCommandFocus();
-};
+}
 
 function processCommand(text){
 	 parseInput(text);
@@ -425,7 +431,7 @@ function setup() {
 	POOF();
 
     out('INIT Done');
-};
+}
 
 // SECTIONS 1, 2, 5, 6, 10, 12.  READ MESSAGES AND SET UP POINTERS.
 function parseText(ndx, array, condition) {
@@ -435,10 +441,10 @@ function parseText(ndx, array, condition) {
 	while (++ndx, loc = parseInt(LINES[ndx]), loc != -1) {
 		if (loc != oldloc) {
 			oldloc = loc;
-			if (!condition || (loc > 0 && loc < 100)) array[loc] = i;
-		};
-	};
-};
+			if (!condition || (loc > 0 && loc < 100)) array[loc] = ndx;
+		}
+	}
+}
 
 // THE STUFF FOR SECTION 3 IS ENCODED HERE.  EACH "FROM-LOCATION" GETS A
 // CONTIGUOUS SECTION OF THE "TRAVEL" ARRAY.  EACH ENTRY IN TRAVEL IS
@@ -458,11 +464,11 @@ function parseTravel(ndx) {
 			if (tk[t] != 0) {
 				TRAVEL[trvs] = newloc * 1000 + tk[t];
 				trvs++;
-			};
-		};
+			}
+		}
 		TRAVEL[trvs-1] = -TRAVEL[trvs-1];
-	};
-};
+	}
+}
 
 // HERE WE READ IN THE VOCABULARY.  KTAB[N] IS THE WORD NUMBER, ATAB[N] IS
 // THE CORRESPONDING WORD.  THE -1 AT THE END OF SECTION 4 IS LEFT IN KTAB
@@ -483,16 +489,16 @@ function initObj(ndx) {
 	while (++ndx, line = LINES[ndx].split(/[ ]+/).map(Number), obj = line.shift(), obj != -1) {
 		PLAC[obj] = line.shift();
 		FIXD[obj] = line.shift();
-	};
-};
+	}
+}
 
 // READ DEFAULT MESSAGE NUMBERS FOR ACTION VERBS, STORE IN ACTSPK.
 function defMssg(ndx) {
 	var verb;
 	while (++ndx, verb = parseInt(LINES[ndx]), verb != -1) {
 		ACTSPK[verb] = parseInt(LINES[ndx].substr(8));
-	};
-};
+	}
+}
 
 // READ INFO ABOUT AVAILABLE LIQUIDS AND OTHER CONDITIONS, STORE IN COND.
 function initCond(ndx) {
@@ -501,9 +507,9 @@ function initCond(ndx) {
 	while (++ndx, tk = LINES[ndx].split(/[ ]+/).map(Number), k = tk.shift(), k != -1) {
         for (var t in tk) {
             if (tk[t] != 0) COND[tk[t]] += (1<<k);
-		};
-	};
-};
+		}
+	}
+}
 
 // READ DATA FOR HINTS.
 function initHint(ndx) {
@@ -513,10 +519,9 @@ function initHint(ndx) {
         for (var t = 0; t < 4; t++) {
             HINTS[k][t] = tk[t];
             HNTMAX = Math.max(HNTMAX, k);
-		};
-	};
-};
-
+		}
+	}
+}
 
 //C  IF SETUP = 2 WE DON'T NEED TO DO THIS.  IT'S ONLY NECESSARY IF WE HAVEN'T DONE
 //C  IT AT ALL OR IF THE PROGRAM HAS BEEN RUN SINCE THEN.
@@ -539,7 +544,7 @@ function setupFixedMotion() {
 		PROP[i] = 0;
 		LINK[i] = 0;
 		LINK[i+100] = 0;
-	};
+	}
 
 	for (var i = 1; i <= LOCSIZ; i++) { 
         if (LTEXT[i] != 0 && KEY[i] != 0) {
@@ -548,8 +553,8 @@ function setupFixedMotion() {
 		};
 		ATLOC[i] = 0;
 		ABB[i] = 0;
-	};
-};
+	}
+}
 
 // SET UP THE ATLOC AND LINK ARRAYS AS DESCRIBED ABOVE.  WE'LL USE THE DROP
 // SUBROUTINE, WHICH PREFACES NEW OBJECTS ON THE LISTS.  SINCE WE WANT THINGS
@@ -563,17 +568,17 @@ function setupAtLoc() {
 		if (FIXD[k] > 0) {
 			DROP(k+100, FIXD[k]);
 			DROP(k, PLAC[k]);
-		};
-	};
+		}
+	}
 
 	for (var i = 1; i <= 100; i++) {
 		var k = 101-i;
 		FIXED[k] = FIXD[k];
 		if (PLAC[k] !=  0 && FIXD[k] <=  0) {
 			DROP(k, PLAC[k]);
-		};
-	};
-};
+		}
+	}
+}
 
 // TREASURES, AS NOTED EARLIER, ARE OBJECTS 50 THROUGH MAXTRS (CURRENTLY 79) .
 // THEIR PROPS ARE INITIALLY -1, AND ARE SET TO 0 THE FIRST TIME THEY ARE
@@ -587,8 +592,8 @@ function setupTreasures() {
 	for (var i = 50; i <= MAXTRS; i++) {
 		if (PTEXT[i] !=  0) PROP[i] = -1;
 		TALLY = TALLY-PROP[i];
-	};
-};
+	}
+}
 
 // CLEAR THE HINT STUFF.  HINTLC[I] IS HOW LONG HE'S BEEN AT LOC WITH COND BIT
 // I.  HINTED[I] IS TRUE IFF HINT I HAS BEEN USED.
@@ -596,8 +601,8 @@ function clearHintStuff() {
 	for (var i = 1; i <= HNTMAX; i++) {
 		HINTED[i] = false;
 		HINTLC[i] = 0;
-	};
-};
+	}
+}
 
 //C  DEFINE SOME HANDY MNEMONICS.  THESE CORRESPOND TO OBJECT NUMBERS.
 function defineMnemonics() {
@@ -660,8 +665,7 @@ function defineMnemonics() {
 	THROW  = VOCAB('THROW',2);
 	FIND   = VOCAB('FIND',2);
 	INVENT = VOCAB('INVEN',2);
-};
-
+}
 
 //C  INITIALISE THE DWARVES.  DLOC IS LOC OF DWARVES, HARD-WIRED IN.  ODLOC IS
 //C  PRIOR LOC OF EACH DWARF, INITIALLY GARBAGE.  DALTLC IS ALTERNATE INITIAL LOC
@@ -688,7 +692,7 @@ function initDwarves() {
 	DLOC[5] = 64;
 	DLOC[6] = CHLOC;
 	DALTLC = 18;
-};
+}
 
 function initGlobals() {
 	TURNS = 0;
@@ -699,7 +703,7 @@ function initGlobals() {
 	ABBNUM = 5;
 	for (var i = 1; i <= 4; i++) {
 		if (RTEXT[2*i+81] != 0) MAXDIE = i+1; 
-	};
+	}
 	NUMDIE = 0;
 	HOLDNG = 0;
 	DKILL = 0;
@@ -713,13 +717,25 @@ function initGlobals() {
 	CLOSED =  false;
 	GAVEUP =  false;
 	SCORNG =  false;
-};
+}
 
 //
 
 //C  START-UP, DWARF STUFF
 //
 setup(); // read the database & set up variables
+
+start();
+
+function start() {
+	
+	HINTED[3] = YES(65,1,0); // Check if he wants a hint
+	NEWLOC = 1; // Set the new location
+	LIMIT = 330; // The limit is 330 moves unless he has taken a hint
+	if (HINTED[3]) LIMIT = 1000;
+	// start calling functions
+	
+}
 //No demos shall be given
 //1	DEMO = START(0)
 //	CALL MOTD( false) 
@@ -727,14 +743,11 @@ setup(); // read the database & set up variables
 //??
 //	I = RAN(1) 
 
-HINTED[3] = YES(65,1,0);
-NEWLOC = 1;
-LIMIT = 330;
-if (HINTED[3]) LIMIT = 1000;
+
 
 //
 //C  CAN'T LEAVE CAVE ONCE IT'S CLOSING (EXCEPT BY MAIN OFFICE) .
-//
+//we come back here...
 //2	if (NEWLOC >=  9 || NEWLOC == 0 ||  !CLOSNG) GOTO 71
 //	CALL RSPEAK(130) 
 //	NEWLOC = LOC
@@ -1328,31 +1341,139 @@ if (HINTED[3]) LIMIT = 1000;
 //
 //C  RANDOM INTRANSITIVE VERBS COME HERE.  CLEAR OBJ JUST IN CASE (SEE "ATTACK") .
 //
-//8000	CALL A5TOA1(WD1,WD1X,'What?',TK,K) 
-//	TYPE 8002,(TK[I],I = 1,K) 
-//8002	FORMAT(/' ',20A1) 
-//	OBJ = 0
-//	GOTO 2600
-//
-//C  CARRY, NO OBJECT GIVEN YET.  OK IF ONLY ONE OBJECT PRESENT.
-//
-//8010	if (ATLOC[LOC] == 0 || LINK[ATLOC[LOC]] ! =  0) GOTO 8000
-		for (var I = 1; I <= 5; I++) {
-			if (DLOC[I] == LOC && DFLAG >=  2) {} //GOTO 8000;
-//8012	
+
+
+// 8000
+// RANDOM INTRANSITIVE VERBS COME HERE.  CLEAR OBJ JUST IN CASE (SEE "ATTACK") .
+function sayWhat(verb) {
+	out(verb + "What?");
+	OBJ = 0;
+	return false;
+	// return to 'check hints' (2600)
+}
+
+function verbTakeObj(){
+if (toting(obj)){ 
+	rSpeak(24, BLACK);  /* You are already carrying it!*/ 
+	return false;
+}
+
+if (obj == PLANT && prop[PLANT] <= 0){
+	rSpeak(115, BLACK); /* The plant has exceptionally deep
+                    	   roots and cannot be pulled free.*/
+	return false;
+}
+
+if (obj == BEAR  && prop[BEAR] == 1){ 
+	rSpeak(169, BLACK); /* The bear is still chained to the wall.*/
+return false;
+}
+
+if (obj == CHAIN && prop[CHAIN] != 0){ 
+	rSpeak(170, BLACK);  /* The chain is still locked.*/
+	return false;
+}
+
+if (fixed[obj] != 0){ 
+	rSpeak(25, BLACK);   /* You can't be serious! */ 
+	return false;
+}
+
+if (obj == WATER || obj == OIL){		
+	if (here(BOTTLE) && liq() == obj)
+		obj = BOTTLE;
+	else{
+		if (toting(BOTTLE))
+			if (prop[BOTTLE] == 1){ /* empty */
+				obj = BOTTLE;
+				return verbFill();
 			}
-//	OBJ = ATLOC[LOC]
-//
-//C  CARRY AN OBJECT.  SPECIAL CASES FOR BIRD AND CAGE (IF BIRD IN CAGE, CAN'T
-//C  TAKE ONE WITHOUT THE OTHER.  LIQUIDS ALSO SPECIAL, SINCE THEY DEPEND ON
-//C  STATUS OF BOTTLE.  ALSO VARIOUS SIDE EFFECTS, ETC.
-//
-//9010	if (TOTING(OBJ) ) GOTO 2011
-//	SPK = 25
-//	if (OBJ == PLANT && PROP[PLANT] <=  0) SPK = 115
-//	if (OBJ == BEAR && PROP[BEAR] == 1) SPK = 169
-//	if (OBJ == CHAIN && PROP[BEAR] ! =  0) SPK = 170
-//	if (FIXED[OBJ] ! =  0) GOTO 2011
+			else
+				rSpeak(105, BLACK); /* Your bottle is already full.*/
+		else  
+			rSpeak(104, BLACK);     /* You have nothing in which to carry it. */
+		return false;
+	}
+}
+
+if (HOLDNG >= 7){
+	/* You can't carry anything more. You'll have to drop something first. */
+	rSpeak(92, BLACK);
+return false;
+}
+
+if (obj == BIRD && prop[BIRD] == 0 && toting(ROD)){
+	/* The bird was unafraid when you entered, but as you approach it becomes 
+ 	   disturbed and you cannot catch it. */
+	rSpeak(26, BLACK); 
+	return false;
+}
+
+if (obj == BIRD && prop[BIRD] == 0 && !toting(CAGE)){
+	/* You can catch the bird, but you cannot carry it. */
+	rSpeak(27, BLACK);
+return false;
+}
+
+/* Otherwise it's good to go ... */
+if (obj == WATER || obj == OIL)
+	if (here(BOTTLE) && liq() == obj)
+		obj = BOTTLE;
+
+if (obj == BIRD && prop[BIRD] == 0)
+	prop[BIRD] = 1; 
+      
+if ((obj == BIRD || obj == CAGE) && prop[BIRD] != 0) 
+	carry(BIRD+CAGE-obj,loc);
+
+carry(obj,loc);
+ 
+var kObj = liq();
+if (obj == BOTTLE && kObj != 0) 
+	place[kObj] = -1;
+    
+rSpeak(54, BLACK); /* Ok */
+
+return false;
+}		
+function take() {
+	var spk = ACTSPK[VERB];
+	//C  CARRY, NO OBJECT GIVEN YET.  OK IF ONLY ONE OBJECT PRESENT.
+	if (OBJ ==  0) { /* Intransitive */
+		if (ATLOC[LOC] == 0 || LINK[ATLOC[LOC]] !=  0) {
+			return sayWhat(VERB);
+		}
+		for (var i = 1; i <= 5; i++) {
+			if (DLOC[i] == LOC && DFLAG >= 2) { // check dwarves
+				return sayWhat(VERB);
+			}
+		}
+		OBJ = ATLOC[LOC]; // The one object present
+	}
+	// CARRY AN OBJECT.  SPECIAL CASES FOR BIRD AND CAGE (IF BIRD IN CAGE, CAN'T
+	// TAKE ONE WITHOUT THE OTHER.  LIQUIDS ALSO SPECIAL, SINCE THEY DEPEND ON
+	// STATUS OF BOTTLE.  ALSO VARIOUS SIDE EFFECTS, ETC.
+	if (TOTING(OBJ)) { 
+		RSPEAK(spk); /* You are already carrying it!*/ 
+		return false;
+	}
+	spk = 25; /* You can't be serious! */ 
+	if (OBJ == PLANT && PROP[PLANT] <= 0) spk = 115; 
+	/* The plant has exceptionally deep roots and cannot be pulled free.*/
+	if (OBJ == BEAR && PROP[BEAR] == 1) spk = 169;
+	/* The bear is still chained to the wall.*/
+	if (OBJ == CHAIN && PROP[BEAR] !=  0) spk = 170;
+	/* The chain is still locked.*/
+	if (FIXED[OBJ] != 0) { 
+		RSPEAK(spk); 
+		return false;
+	}
+}
+
+
+
+
+
 //	if (OBJ ! =  WATER && OBJ ! =  OIL) GOTO 9017
 //	if (HERE(BOTTLE)  && LIQ(0)  == OBJ) GOTO 9018
 //	OBJ = BOTTLE
@@ -2236,9 +2357,9 @@ function SPEAK(n) { /** retest **/
 		out(LINES[k].substr(8)); 
 		mssg += LINES[k].substr(8);
 		k++;
-	};
+	}
 	return mssg;
-};
+}
 
 //FIND THE SKIP+1ST MESSAGE FROM MSG AND PRINT IT.  MSG SHOULD BE THE INDEX OF
 //THE INVENTORY MESSAGE FOR OBJECT.  (INVEN+N+1 MESSAGE IS PROP=N MESSAGE).
@@ -2246,19 +2367,19 @@ function PSPEAK(msg, skip) {
 	var m = PTEXT[msg];
 	if (skip >= 0) m += skip + 1;
 	return SPEAK(m);
-};
+}
 
 //PRINT THE I-TH "RANDOM" MESSAGE (SECTION 6 OF DATABASE).
 function RSPEAK(i) {
 	if (i != 0) return SPEAK(RTEXT[i]);
 	else return '';
-};
+}
 
 //PRINT THE I-TH "MAGIC" MESSAGE (SECTION 12 OF DATABASE).
 function MSPEAK(i) {
 	if (i != 0) return SPEAK(MTEXT[i]);
 	else return '';
-};
+}
 
 /*
 		SUBROUTINE GETIN(WORD1,WORD1X,WORD2,WORD2X)
@@ -2316,12 +2437,12 @@ function MSPEAK(i) {
 //CALL YESX (BELOW) WITH MESSAGES FROM SECTION 6.
 function YES(x, y, z) { /** as this is the only one pointing to YESX, it can be incorporated **/
 	return YESX(x, y, z, RSPEAK);
-};
+}
 
 //CALL YESX (BELOW) WITH MESSAGES FROM SECTION 12.
 function YESM(x, y, z) { /** won't happen **/
 	return YESX(x, y, z, MSPEAK);
-};
+}
 
 // PRINT MESSAGE X, WAIT FOR YES/NO ANSWER.  IF YES, PRINT Y AND LEAVE YEA
 // TRUE; IF NO, PRINT Z AND LEAVE YEA FALSE.  SPK IS EITHER RSPEAK OR MSPEAK.
@@ -2333,7 +2454,7 @@ function YESX(x, y, z, spk) {
 		else { out('> No'); spk(z); }
 	}
 	return reply;
-};
+}
 
 // SUBROUTINE A5TOA1(A,B,C,CHARS,LENG) - no need for unpacking characters
 
@@ -2343,7 +2464,7 @@ function YESX(x, y, z, spk) {
 // THE INDEX OF THE LAST NON-BLANK CHAR IN CHARS IS RETURNED IN LENG.
 function A5TOA1(A,B,C,CHARS,LENG) {
 	return;
-};
+}
 /*
 	    IMPLICIT INTEGER(A-Z)
 		DIMENSION CHARS(20),WORDS(3)
@@ -2379,15 +2500,15 @@ function VOCAB(id, init) {
 	for (var i = 1; i <= TABSIZ; i++) {
 		if (KTAB[i] == -1) {
 			if (init < 0) return -1; else throw 'REQUIRED VOCABULARY WORD NOT FOUND';
-		};
+		}
 		if (init >= 0 && (KTAB[i]/1000>>0) != init) continue;
 		if (ATAB[i] == id) {
 			if (init < 0) return KTAB[i];
 			else return KTAB[i] % 1000;
 		}
-	};
+	}
 	throw 'RAN OFF END OF VOCABULARY TABLE';
-};
+}
  
 // PERMANENTLY ELIMINATE "OBJECT" BY MOVING TO A NON-EXISTENT LOCATION.
 function DSTROY(object) {
@@ -2401,7 +2522,7 @@ function JUGGLE(object) {
 	var j = FIXED[object];
 	MOVE(object, i);
 	MOVE(object + 100, j);
-};
+}
 
 // PLACE ANY OBJECT ANYWHERE BY PICKING IT UP AND DROPPING IT.  MAY ALREADY BE
 // TOTING, IN WHICH CASE THE CARRY IS A NO-OP.  MUSTN'T PICK UP OBJECTS WHICH
@@ -2412,14 +2533,14 @@ function MOVE(object, where) {
 	else from = PLACE[object];
 	if (from > 0 && from <= 300) CARRY(object, from);
 	DROP(object, where);
-};
+}
 
 // PUT IS THE SAME AS MOVE, EXCEPT IT RETURNS A VALUE USED TO SET UP THE
 // NEGATED PROP VALUES FOR THE REPOSITORY OBJECTS.
 function PUT(object, where, pval) {
 	MOVE(object, where);
 	return (-1) - pval;
-};
+}
 
 // START TOTING AN OBJECT, REMOVING IT FROM THE LIST OF THINGS AT ITS FORMER
 // LOCATION.  INCR HOLDNG UNLESS IT WAS ALREADY BEING TOTED.  IF OBJECT>100
@@ -2428,15 +2549,15 @@ function CARRY(object, where) {
 	if (object <= 100 && PLACE[object] != -1) {
 		PLACE[object] = -1;
 		HOLDNG++;
-	};
+	}
 	if (ATLOC[where] == object) ATLOC[where] = LINK[object];
 	else {
 		var temp = ATLOC[where];
 		while (LINK[temp] != object) temp = LINK[temp];
 		LINK[temp] = LINK[object];
-	};
+	}
 
-};
+}
 
 // PLACE AN OBJECT AT A GIVEN LOC, PREFIXING IT ONTO THE ATLOC LIST.  DECR
 // HOLDNG IF THE OBJECT WAS BEING TOTED.
@@ -2445,13 +2566,13 @@ function DROP(object, where) {
 	else {
 		if (PLACE[object] == -1) HOLDNG--;
 		PLACE[object] = where;
-	};
+	}
 	if (where > 0) {
 		LINK[object] = ATLOC[where];
 		ATLOC[where] = object;
-	};
-};
-			
+	}
+}
+		
 // WIZARDRY ROUTINES (START, MAINT, WIZARD, HOURS(X), NEWHRS(X), MOTD, POOF)
 // Skip these alltogether
 function START() {};
@@ -2470,7 +2591,7 @@ function POOF() {
 	MAGIC='DWARF';
 	MAGNM=11111;
 	LATNCY=90;
-};
+}
 
 // UTILITY ROUTINES (SHIFT, RAN, DATIME, CIAO, BUG)
 // No real need ...
@@ -2479,22 +2600,22 @@ function POOF() {
 function SHIFT(val, dist) {
 	if (dist >= 0) return (val << dist);
 	else return (val >> Math.abs(dist));
-};
+}
 
 // RAN RETURNS A VALUE UNIFORMLY SELECTED BETWEEN 0 AND RANGE-1. 
 function RAN(range) {
 	return (range * Math.random())>>0; // right shift 0 to make this integer (alt. Math.floor)
-};
+}
 
 // RETURN THE DATE AND TIME IN D AND T. (won't because javascript won't modify d and t)
 function DATIME(d, t) {
 	return;
-};
+}
 
 // EXITS, AFTER ISSUING REMINDER TO SAVE NEW CORE IMAGE. No core in javascript (typical mainframe behavior)
 function CIAO() {
 	throw 'Be sure to save your core-image...';
-};
+}
 
 // THE FOLLOWING CONDITIONS ARE CURRENTLY CONSIDERED FATAL BUGS.  NUMBERS < 20
 // ARE DETECTED WHILE READING THE DATABASE; THE OTHERS OCCUR AT "RUN TIME".
@@ -2520,6 +2641,6 @@ function BUG(num) {
 		case 26: mssg = 'LOCATION HAS NO TRAVEL ENTRIES'; break;
 		case 27: mssg = 'HINT NUMBER EXCEEDS GOTO LIST'; break;
 		case 28: mssg = 'INVALID MONTH RETURNED BY DATE FUNCTION'; break;
-	};
+	}
 	throw 'Fatal error: ' + mssg;
-};
+}
