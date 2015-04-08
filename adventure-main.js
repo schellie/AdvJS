@@ -110,6 +110,12 @@ var CLOCK2; // NUMBER OF TURNS FROM FIRST WARNING TILL BLINDING FLASH
 //DATA SETUP/0/,BLKLIN/ true/
 var SETUP = 0; // not useful??
 var BLKLIN = true;
+var LOC;
+var NEWLOC;
+var IDONDX;
+var MXSCOR;
+var SCORE;
+var CLSSES;
 
 var HOLDNG;
 
@@ -158,8 +164,8 @@ var LIQ = function() { /** test ok **/
 
 // OBJECT NUMBER OF LIQUID (IF ANY) AT LOC
 var LIQLOC = function(loc) { /** test ok **/
-	var c1 = (COND[loc]/2>>0)*2;
-	var c2 = (COND[loc]/4>>0);
+	var c1 = (COND[loc]/2>>0)*2,
+		c2 = (COND[loc]/4>>0);
 	return LIQ2(((c1%8)-5) * (c2%2) + 1);
 };
 
@@ -193,9 +199,10 @@ var commandLine; // area to input commands
 
 //Display a string 
 function out(s) { /** test ok **/
-	var textarea = document.getElementById('displayText');
-	textarea.value += s + '\n';
-	textarea.scrollTop = textarea.scrollHeight;
+	var displayText;
+	displayText = document.getElementById('displayText');
+	displayText.value += s + '\n';
+	displayText.scrollTop = displayText.scrollHeight;
 };
 
 //Update the status bar
@@ -349,7 +356,7 @@ function processCommand(text){
 function setup() {
 	
 	var sections = new Array();
-	var LOC, OLDLOC = -1;
+	var OLDLOC = -1;
 
 	// setup I/O
     commandLine = document.getElementById("commandLine");
@@ -421,15 +428,15 @@ function setup() {
 };
 
 // SECTIONS 1, 2, 5, 6, 10, 12.  READ MESSAGES AND SET UP POINTERS.
-function parseText(start, array, condition) {
-	var loc, oldloc = 0, i = start + 1;
+function parseText(ndx, array, condition) {
+	var loc, 
+		oldloc = 0, 
     condition = typeof condition !== 'undefined' ? condition : false;
-	while (loc = parseInt(LINES[i]), loc != -1) {
+	while (++ndx, loc = parseInt(LINES[ndx]), loc != -1) {
 		if (loc != oldloc) {
 			oldloc = loc;
 			if (!condition || (loc > 0 && loc < 100)) array[loc] = i;
 		};
-		i++;
 	};
 };
 
@@ -438,81 +445,75 @@ function parseText(start, array, condition) {
 // NEWLOC*1000 + KEYWORD (FROM SECTION 4, MOTION VERBS) , AND IS NEGATED IF
 // THIS IS THE LAST ENTRY FOR THIS LOCATION.  KEY[N] IS THE INDEX IN TRAVEL
 // OF THE FIRST OPTION AT LOCATION N.
-function parseTravel(start) {
-	var tk = new Array();
-	var loc, newloc = 0, i = start + 1;
-	var TRVS = 1;
-
-	while (tk = LINES[i].split(/[ ]+/).map(Number), loc = tk.shift(), loc != -1) {
+function parseTravel(ndx) {
+	var tk = new Array(),
+		loc, 
+		newloc = 0, 
+		trvs = 1;
+	while (++ndx, tk = LINES[ndx].split(/[ ]+/).map(Number), loc = tk.shift(), loc != -1) {
 		newloc = tk.shift();
-		if (KEY[loc] == 0) KEY[loc] = TRVS;
-		else TRAVEL[TRVS-1] = -TRAVEL[TRVS-1];
+		if (KEY[loc] == 0) KEY[loc] = trvs;
+		else TRAVEL[trvs-1] = -TRAVEL[trvs-1];
 		for (var t in tk) {
 			if (tk[t] != 0) {
-				TRAVEL[TRVS] = newloc * 1000 + tk[t];
-				TRVS++;
+				TRAVEL[trvs] = newloc * 1000 + tk[t];
+				trvs++;
 			};
 		};
-		TRAVEL[TRVS-1] = -TRAVEL[TRVS-1];
-		i++;
+		TRAVEL[trvs-1] = -TRAVEL[trvs-1];
 	};
 };
 
 // HERE WE READ IN THE VOCABULARY.  KTAB[N] IS THE WORD NUMBER, ATAB[N] IS
 // THE CORRESPONDING WORD.  THE -1 AT THE END OF SECTION 4 IS LEFT IN KTAB
 // AS AN END-MARKER. 
-function parseVocab(start) {
-	var TABNDX = 1, i = start + 1;
-	while (KTAB[TABNDX] = parseInt(LINES[i]), KTAB[TABNDX] != -1) {
-		ATAB[TABNDX++] = LINES[i].substr(8, 5).trim();
-		i++;
+function parseVocab(ndx) {
+	var TABNDX = 1;
+	while (++ndx, KTAB[TABNDX] = parseInt(LINES[ndx]), KTAB[TABNDX] != -1) {
+		ATAB[TABNDX++] = LINES[ndx].substr(8, 5).trim();
 	};
 };
 
 // READ IN THE INITIAL LOCATIONS FOR EACH OBJECT.  ALSO THE IMMOVABILITY INFO.
 // PLAC CONTAINS INITIAL LOCATIONS OF OBJECTS.  FIXD IS -1 FOR IMMOVABLE
 // OBJECTS (INCLUDING THE SNAKE) , OR  =  SECOND LOC FOR TWO-PLACED OBJECTS.
-function initObj(start) {
-	var line = new Array();
-	var obj, i = start + 1;
-	while (line = LINES[i].split(/[ ]+/).map(Number), obj = line.shift(), obj != -1) {
+function initObj(ndx) {
+	var line = new Array(),
+		obj;
+	while (++ndx, line = LINES[ndx].split(/[ ]+/).map(Number), obj = line.shift(), obj != -1) {
 		PLAC[obj] = line.shift();
 		FIXD[obj] = line.shift();
-		i++;
 	};
 };
 
 // READ DEFAULT MESSAGE NUMBERS FOR ACTION VERBS, STORE IN ACTSPK.
-function defMssg(start) {
-	var verb, i = start + 1;
-	while (verb = parseInt(LINES[i]), verb != -1) {
-		ACTSPK[verb] = parseInt(LINES[i].substr(8));
-		i++;
+function defMssg(ndx) {
+	var verb;
+	while (++ndx, verb = parseInt(LINES[ndx]), verb != -1) {
+		ACTSPK[verb] = parseInt(LINES[ndx].substr(8));
 	};
 };
 
 // READ INFO ABOUT AVAILABLE LIQUIDS AND OTHER CONDITIONS, STORE IN COND.
-function initCond(start) {
-	var tk = new Array();
-	var k, i = start + 1;
-	while (tk = LINES[i].split(/[ ]+/).map(Number), k = tk.shift(), k != -1) {
+function initCond(ndx) {
+	var tk = new Array(),
+		k;
+	while (++ndx, tk = LINES[ndx].split(/[ ]+/).map(Number), k = tk.shift(), k != -1) {
         for (var t in tk) {
             if (tk[t] != 0) COND[tk[t]] += (1<<k);
 		};
-		i++;
 	};
 };
 
 // READ DATA FOR HINTS.
-function initHint(start) {
-	var tk = new Array();
-	var k, i = start + 1;
-	while (tk = LINES[i].split(/[ ]+/).map(Number), k = tk.shift(), k != -1) {
+function initHint(ndx) {
+	var tk = new Array(),
+		k;
+	while (++ndx, tk = LINES[ndx].split(/[ ]+/).map(Number), k = tk.shift(), k != -1) {
         for (var t = 0; t < 4; t++) {
             HINTS[k][t] = tk[t];
             HNTMAX = Math.max(HNTMAX, k);
 		};
-		i++;
 	};
 };
 
@@ -730,7 +731,7 @@ HINTED[3] = YES(65,1,0);
 NEWLOC = 1;
 LIMIT = 330;
 if (HINTED[3]) LIMIT = 1000;
-/*
+
 //
 //C  CAN'T LEAVE CAVE ONCE IT'S CLOSING (EXCEPT BY MAIN OFFICE) .
 //
@@ -1592,7 +1593,7 @@ if (HINTED[3]) LIMIT = 1000;
 //	CALL PSPEAK(DRAGON,1) 
 //	PROP[DRAGON] = 2
 //	PROP[RUG] = 0
-//	K = (PLAC[DRAGON]+FIXD[DRAGON]) /2
+	var K = (PLAC[DRAGON]+FIXD[DRAGON]) /2;
 //	CALL MOVE(DRAGON+100,-1) 
 //	CALL MOVE(RUG+100,0) 
 //	CALL MOVE(DRAGON,K) 
@@ -2219,7 +2220,7 @@ if (HINTED[3]) LIMIT = 1000;
 //
 //
 //	END
-*/
+
 // I/O ROUTINES (SPEAK, PSPEAK, RSPEAK, GETIN, YES, A5TOA1)
 
 // PRINT THE MESSAGE WHICH STARTS AT LINES(N).  PRECEDE IT WITH A BLANK LINE
