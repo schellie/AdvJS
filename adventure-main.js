@@ -359,6 +359,8 @@ var setup = function() {
     };
     displayText = document.getElementById('displayText');
     
+    out('Initializing...');
+    
 	// Init tables
 	for (var i = 1; i <= 300; i++) {
 		if (i <= OBJSIZ) PTEXT[i] = 0;
@@ -412,7 +414,10 @@ var setup = function() {
 	defineMnemonics();
 	initDwarves();
 	initGlobals();
-	//
+	// FINALLY, SINCE WE'RE CLEARLY SETTING THINGS UP FOR THE FIRST TIME...
+	POOF();
+
+    out('INIT Done');
 };
 
 // SECTIONS 1, 2, 5, 6, 10, 12.  READ MESSAGES AND SET UP POINTERS.
@@ -710,69 +715,21 @@ var initGlobals = function() {
 };
 
 //
-//C  IF SETUP = 1, REPORT ON AMOUNT OF ARRAYS ACTUALLY USED, TO PERMIT REDUCTIONS.
-//
-//	if (SETUP ! =  1) GOTO 1
-//	SETUP = 2
-//
-	for (var K = 1; K <= LOCSIZ; K++) {
-		KK = LOCSIZ + 1 - K;
-		if (LTEXT[KK] !=  0) {} //GOTO 1997;
-	}
 
-	OBJ = 0;
-//1997:
-	for (var K = 1; K <= 100; K++) {
-		if (PTEXT[K] !=  0) OBJ = OBJ+1;
-	}
-
-	for (var K = 1; K <= TABNDX; K++) {
-		if (KTAB[K]/1000 == 2) VERB = KTAB[K]-2000;
-	}
-
-	for (var K = 1; K <= RTXSIZ; K++) {
-		J = RTXSIZ+1-K;
-		if (RTEXT[J] !=  0) {} //GOTO 1993;
-	}
-
-//1993:
-	for (var K = 1; K <= MAGSIZ; K++) {
-		I = MAGSIZ + 1 - K;
-		if (MTEXT[I] !=  0) {} //GOTO 1991;
-	}
-
-//1991:
-	K = 100;
-//	TYPE 1999,LINUSE,LINSIZ,TRVS,TRVSIZ,TABNDX,TABSIZ,KK
-//	1	,LOCSIZ,OBJ,K,VERB,VRBSIZ,J,RTXSIZ,CLSSES,CLSMAX
-//	2	,HNTMAX,HNTSIZ,I,MAGSIZ
-//1999	FORMAT (' Table space used:'/
-//	1	' ',I6,' OF ',I6,' words of messages'/
-//	2	' ',I6,' OF ',I6,' travel options'/
-//	3	' ',I6,' OF ',I6,' vocabulary words'/
-//	4	' ',I6,' OF ',I6,' locations'/
-//	5	' ',I6,' OF ',I6,' objects'/
-//	6	' ',I6,' OF ',I6,' action verbs'/
-//	7	' ',I6,' OF ',I6,' RTEXT messages'/
-//	8	' ',I6,' OF ',I6,' CLASS messages'/
-//	9	' ',I6,' OF ',I6,' hints'/
-//	1	' ',I6,' OF ',I6,' MAGIC messages'/
-//	2	) 
-//
-//C  FINALLY, SINCE WE'RE CLEARLY SETTING THINGS UP FOR THE FIRST TIME...
-//
-//	CALL POOF
-//	PAUSE 'INIT Done'
 //C  START-UP, DWARF STUFF
 //
-//1	DEMO = START(0) 
+setup(); // read the database & set up variables
+//No demos shall be given
+//1	DEMO = START(0)
 //	CALL MOTD( false) 
+
+//??
 //	I = RAN(1) 
-//	HINTED[3] = YES(65,1,0) 
-//	NEWLOC = 1
-//	SETUP = 3
-//	LIMIT = 330
-//	if (HINTED[3]) LIMIT = 1000
+
+HINTED[3] = YES(65,1,0);
+NEWLOC = 1;
+LIMIT = 330;
+if (HINTED[3]) LIMIT = 1000;
 //
 //C  CAN'T LEAVE CAVE ONCE IT'S CLOSING (EXCEPT BY MAIN OFFICE) .
 //
@@ -2375,15 +2332,15 @@ var YESX = function(x, y, z, spk) {
 	return reply;
 };
 
-	// SUBROUTINE A5TOA1(A,B,C,CHARS,LENG) - no need for unpacking characters
+// SUBROUTINE A5TOA1(A,B,C,CHARS,LENG) - no need for unpacking characters
 
-	// A AND B CONTAIN A 1- TO 9-CHARACTER WORD IN A5 FORMAT, C CONTAINS ANOTHER
-	// WORD AND/OR PUNCTUATION.  THEY ARE UNPACKED TO ONE CHARACTER PER WORD IN THE
-	// ARRAY "CHARS", WITH EXACTLY ONE BLANK BETWEEN B AND C (OR NONE, IF C >= 0).
-	// THE INDEX OF THE LAST NON-BLANK CHAR IN CHARS IS RETURNED IN LENG.
-	var A5TOA1 = function(A,B,C,CHARS,LENG) {
-		return;
-	};
+// A AND B CONTAIN A 1- TO 9-CHARACTER WORD IN A5 FORMAT, C CONTAINS ANOTHER
+// WORD AND/OR PUNCTUATION.  THEY ARE UNPACKED TO ONE CHARACTER PER WORD IN THE
+// ARRAY "CHARS", WITH EXACTLY ONE BLANK BETWEEN B AND C (OR NONE, IF C >= 0).
+// THE INDEX OF THE LAST NON-BLANK CHAR IN CHARS IS RETURNED IN LENG.
+var A5TOA1 = function(A,B,C,CHARS,LENG) {
+	return;
+};
 /*
 	    IMPLICIT INTEGER(A-Z)
 		DIMENSION CHARS(20),WORDS(3)
