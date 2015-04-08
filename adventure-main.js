@@ -192,25 +192,25 @@ var displayText; // area to output messages
 var commandLine; // area to input commands
 
 //Display a string 
-var out = function(s) { /** test ok **/
+function out(s) { /** test ok **/
 	var textarea = document.getElementById('displayText');
 	textarea.value += s + '\n';
 	textarea.scrollTop = textarea.scrollHeight;
 };
 
 //Update the status bar
-var updateStatusBar = function(score, moves) { /** test ok **/
+function updateStatusBar(score, moves) { /** test ok **/
 	document.getElementById('statusScore').innerHTML = score;
 	document.getElementById('statusMoves').innerHTML = moves;
 };
 
 //Give focus to commandLine if not a touch device. 
-var giveCommandFocus = function() { /** test ok **/
+function giveCommandFocus() { /** test ok **/
     if (!isTouch) commandLine.focus();
 };
 
 //Get command.
-var getCommand = function() { /** test ok **/
+function getCommand() { /** test ok **/
     var text = commandLine.value;
     commandLine.value = '';
     out('\n' + '> ' + text);
@@ -346,7 +346,7 @@ function processCommand(text){
 // SECTION 12.  WE ALSO CLEAR COND.  SEE DESCRIPTION OF SECTION 9 FOR DETAILS.
 //
 
-var setup = function() {
+function setup() {
 	
 	var sections = new Array();
 	var LOC, OLDLOC = -1;
@@ -421,7 +421,7 @@ var setup = function() {
 };
 
 // SECTIONS 1, 2, 5, 6, 10, 12.  READ MESSAGES AND SET UP POINTERS.
-var parseText = function(start, array, condition) {
+function parseText(start, array, condition) {
 	var loc, oldloc = 0, i = start + 1;
     condition = typeof condition !== 'undefined' ? condition : false;
 	while (loc = parseInt(LINES[i]), loc != -1) {
@@ -438,7 +438,7 @@ var parseText = function(start, array, condition) {
 // NEWLOC*1000 + KEYWORD (FROM SECTION 4, MOTION VERBS) , AND IS NEGATED IF
 // THIS IS THE LAST ENTRY FOR THIS LOCATION.  KEY[N] IS THE INDEX IN TRAVEL
 // OF THE FIRST OPTION AT LOCATION N.
-var parseTravel = function(start) {
+function parseTravel(start) {
 	var tk = new Array();
 	var loc, newloc = 0, i = start + 1;
 	var TRVS = 1;
@@ -461,7 +461,7 @@ var parseTravel = function(start) {
 // HERE WE READ IN THE VOCABULARY.  KTAB[N] IS THE WORD NUMBER, ATAB[N] IS
 // THE CORRESPONDING WORD.  THE -1 AT THE END OF SECTION 4 IS LEFT IN KTAB
 // AS AN END-MARKER. 
-var parseVocab = function(start) {
+function parseVocab(start) {
 	var TABNDX = 1, i = start + 1;
 	while (KTAB[TABNDX] = parseInt(LINES[i]), KTAB[TABNDX] != -1) {
 		ATAB[TABNDX++] = LINES[i].substr(8, 5).trim();
@@ -472,7 +472,7 @@ var parseVocab = function(start) {
 // READ IN THE INITIAL LOCATIONS FOR EACH OBJECT.  ALSO THE IMMOVABILITY INFO.
 // PLAC CONTAINS INITIAL LOCATIONS OF OBJECTS.  FIXD IS -1 FOR IMMOVABLE
 // OBJECTS (INCLUDING THE SNAKE) , OR  =  SECOND LOC FOR TWO-PLACED OBJECTS.
-var initObj = function(start) {
+function initObj(start) {
 	var line = new Array();
 	var obj, i = start + 1;
 	while (line = LINES[i].split(/[ ]+/).map(Number), obj = line.shift(), obj != -1) {
@@ -483,7 +483,7 @@ var initObj = function(start) {
 };
 
 // READ DEFAULT MESSAGE NUMBERS FOR ACTION VERBS, STORE IN ACTSPK.
-var defMssg = function (start) {
+function defMssg(start) {
 	var verb, i = start + 1;
 	while (verb = parseInt(LINES[i]), verb != -1) {
 		ACTSPK[verb] = parseInt(LINES[i].substr(8));
@@ -492,7 +492,7 @@ var defMssg = function (start) {
 };
 
 // READ INFO ABOUT AVAILABLE LIQUIDS AND OTHER CONDITIONS, STORE IN COND.
-var initCond = function(start) {
+function initCond(start) {
 	var tk = new Array();
 	var k, i = start + 1;
 	while (tk = LINES[i].split(/[ ]+/).map(Number), k = tk.shift(), k != -1) {
@@ -504,7 +504,7 @@ var initCond = function(start) {
 };
 
 // READ DATA FOR HINTS.
-var initHint = function(start) {
+function initHint(start) {
 	var tk = new Array();
 	var k, i = start + 1;
 	while (tk = LINES[i].split(/[ ]+/).map(Number), k = tk.shift(), k != -1) {
@@ -532,7 +532,7 @@ var initHint = function(start) {
 // AS OBJ.  (OBJ>100 INDICATES THAT FIXED[OBJ-100] = LOC; LINK[OBJ] IS STILL THE
 // CORRECT LINK TO USE.)   ABB IS ZEROED; IT CONTROLS WHETHER THE ABBREVIATED
 // DESCRIPTION IS PRINTED.  COUNTS MOD 5 UNLESS "LOOK" IS USED.
-var setupFixedMotion = function() {
+function setupFixedMotion() {
 	for (var i = 1; i <= 100; i++) { 
 		PLACE[i] = 0;
 		PROP[i] = 0;
@@ -556,7 +556,7 @@ var setupFixedMotion = function() {
 // LOCS, WE DROP IT TWICE.  THIS ALSO SETS UP "PLACE" AND "FIXED" AS COPIES OF
 // "PLAC" AND "FIXD".  ALSO, SINCE TWO-PLACED OBJECTS ARE TYPICALLY BEST
 // DESCRIBED LAST, WE'LL DROP THEM FIRST.
-var setupAtLoc = function () {
+function setupAtLoc() {
 	for (var i = 1; i <= 100; i++) { 
 		var k = 101-i;
 		if (FIXD[k] > 0) {
@@ -579,7 +579,7 @@ var setupAtLoc = function () {
 // DESCRIBED.  TALLY KEEPS TRACK OF HOW MANY ARE NOT YET FOUND, SO WE KNOW
 // WHEN TO CLOSE THE CAVE.  TALLY2 COUNTS HOW MANY CAN NEVER BE FOUND (E.G. IF
 // LOST BIRD OR BRIDGE) .
-var setupTreasures = function() {
+function setupTreasures() {
 	MAXTRS = 79;
 	TALLY = 0;
 	TALLY2 = 0;
@@ -591,7 +591,7 @@ var setupTreasures = function() {
 
 // CLEAR THE HINT STUFF.  HINTLC[I] IS HOW LONG HE'S BEEN AT LOC WITH COND BIT
 // I.  HINTED[I] IS TRUE IFF HINT I HAS BEEN USED.
-var clearHintStuff = function() {
+function clearHintStuff() {
 	for (var i = 1; i <= HNTMAX; i++) {
 		HINTED[i] = false;
 		HINTLC[i] = 0;
@@ -599,7 +599,7 @@ var clearHintStuff = function() {
 };
 
 //C  DEFINE SOME HANDY MNEMONICS.  THESE CORRESPOND TO OBJECT NUMBERS.
-var defineMnemonics = function() {
+function defineMnemonics() {
 	KEYS   = VOCAB('KEYS',1);
 	LAMP   = VOCAB('LAMP',1);
 	GRATE  = VOCAB('GRATE',1);
@@ -675,7 +675,7 @@ var defineMnemonics = function() {
 //C  SIXTH DWARF IS SPECIAL (THE PIRATE) .  HE ALWAYS STARTS AT HIS CHEST'S
 //C  EVENTUAL LOCATION INSIDE THE MAZE.  THIS LOC IS SAVED IN CHLOC FOR REF.
 //C  THE DEAD END IN THE OTHER MAZE HAS ITS LOC STORED IN CHLOC2.
-var initDwarves = function() {
+function initDwarves() {
 	CHLOC = 114;
 	CHLOC2 = 140;
 	for (var i = 1; i <= 6; i++) DSEEN[i] = false;
@@ -686,10 +686,10 @@ var initDwarves = function() {
 	DLOC[4] = 44;
 	DLOC[5] = 64;
 	DLOC[6] = CHLOC;
-	DALTLC = 18;	
+	DALTLC = 18;
 };
 
-var initGlobals = function() {
+function initGlobals() {
 	TURNS = 0;
 	LMWARN = false;
 	IWEST = 0;
@@ -730,6 +730,7 @@ HINTED[3] = YES(65,1,0);
 NEWLOC = 1;
 LIMIT = 330;
 if (HINTED[3]) LIMIT = 1000;
+/*
 //
 //C  CAN'T LEAVE CAVE ONCE IT'S CLOSING (EXCEPT BY MAIN OFFICE) .
 //
@@ -1674,7 +1675,7 @@ if (HINTED[3]) LIMIT = 1000;
 //	if (OBJ ! =  AXE) GOTO 9020
 	for (var I = 1; I <= 5; I++) {
 		//  NEEDN'T CHECK DFLAG IF AXE IS HERE.
-			if (DLOC[I] == LOC) {}//GOTO 9172;
+			if (DLOC[I] == LOC) {};//GOTO 9172;
 //9171	
 			}
 //	SPK = 152
@@ -2194,7 +2195,7 @@ if (HINTED[3]) LIMIT = 1000;
 //	1	', using',I5,' turns.') 
 //
 	for (var I = 1; I <= CLSSES; I++) { 
-		if (CVAL[I] >=  SCORE) {}//GOTO 20210;
+		if (CVAL[I] >=  SCORE) {}; //GOTO 20210;
 	}
 //	TYPE 20202
 //20202	FORMAT(/' You just went off my scale!!'/) 
@@ -2218,42 +2219,43 @@ if (HINTED[3]) LIMIT = 1000;
 //
 //
 //	END
-	
+*/
 // I/O ROUTINES (SPEAK, PSPEAK, RSPEAK, GETIN, YES, A5TOA1)
 
 // PRINT THE MESSAGE WHICH STARTS AT LINES(N).  PRECEDE IT WITH A BLANK LINE
 // UNLESS BLKLIN IS FALSE.
 // screen: indicates direct write to screen 
-var SPEAK = function(n, screen) { /** retest **/
+function SPEAK(n) { /** retest **/
 	if (n == 0) return '';
 	if (LINES[n].substr(8,3) == '>$<') return '';
-	screen = typeof screen !== 'undefined' ? screen : true;
 	var mssg = '';
 	var k = n;
-	if (screen && BLKLIN) out('');
+	if (BLKLIN) out('');
 	while (parseInt(LINES[k]) == parseInt(LINES[n])) {
-		if (screen) out(LINES[k++].substr(8)); else mssg += LINES[k++].substr(8);
-	}
+		out(LINES[k].substr(8)); 
+		mssg += LINES[k].substr(8);
+		k++;
+	};
 	return mssg;
 };
 
 //FIND THE SKIP+1ST MESSAGE FROM MSG AND PRINT IT.  MSG SHOULD BE THE INDEX OF
 //THE INVENTORY MESSAGE FOR OBJECT.  (INVEN+N+1 MESSAGE IS PROP=N MESSAGE).
-var PSPEAK = function(msg, skip, screen) {
+function PSPEAK(msg, skip) {
 	var m = PTEXT[msg];
 	if (skip >= 0) m += skip + 1;
-	return SPEAK(m, screen);
+	return SPEAK(m);
 };
 
 //PRINT THE I-TH "RANDOM" MESSAGE (SECTION 6 OF DATABASE).
-var RSPEAK = function(i, screen) {
-	if (i != 0) return SPEAK(RTEXT[i], screen);
+function RSPEAK(i) {
+	if (i != 0) return SPEAK(RTEXT[i]);
 	else return '';
 };
 
 //PRINT THE I-TH "MAGIC" MESSAGE (SECTION 12 OF DATABASE).
-var MSPEAK = function(i, screen) {
-	if (i != 0) return SPEAK(MTEXT[i], screen);
+function MSPEAK(i) {
+	if (i != 0) return SPEAK(MTEXT[i]);
 	else return '';
 };
 
@@ -2311,21 +2313,21 @@ var MSPEAK = function(i, screen) {
 
 
 //CALL YESX (BELOW) WITH MESSAGES FROM SECTION 6.
-var YES = function(x, y, z) { /** as this is the only one pointing to YESX, it can be incorporated **/
+function YES(x, y, z) { /** as this is the only one pointing to YESX, it can be incorporated **/
 	return YESX(x, y, z, RSPEAK);
 };
 
 //CALL YESX (BELOW) WITH MESSAGES FROM SECTION 12.
-var YESM = function(x, y, z) { /** won't happen **/
+function YESM(x, y, z) { /** won't happen **/
 	return YESX(x, y, z, MSPEAK);
 };
 
 // PRINT MESSAGE X, WAIT FOR YES/NO ANSWER.  IF YES, PRINT Y AND LEAVE YEA
 // TRUE; IF NO, PRINT Z AND LEAVE YEA FALSE.  SPK IS EITHER RSPEAK OR MSPEAK.
-var YESX = function(x, y, z, spk) {
+function YESX(x, y, z, spk) {
 	var reply = false;
 	if (x != 0) {
-		reply = confirm(spk(x, false));
+		reply = confirm(spk(x));
 		if (reply) { out('> Yes'); spk(y); }
 		else { out('> No'); spk(z); }
 	}
@@ -2338,7 +2340,7 @@ var YESX = function(x, y, z, spk) {
 // WORD AND/OR PUNCTUATION.  THEY ARE UNPACKED TO ONE CHARACTER PER WORD IN THE
 // ARRAY "CHARS", WITH EXACTLY ONE BLANK BETWEEN B AND C (OR NONE, IF C >= 0).
 // THE INDEX OF THE LAST NON-BLANK CHAR IN CHARS IS RETURNED IN LENG.
-var A5TOA1 = function(A,B,C,CHARS,LENG) {
+function A5TOA1(A,B,C,CHARS,LENG) {
 	return;
 };
 /*
@@ -2372,7 +2374,7 @@ var A5TOA1 = function(A,B,C,CHARS,LENG) {
 // THAT ONLY KTAB VALUES WHICH TAKEN OVER 1000 EQUAL INIT MAY BE CONSIDERED.
 // (THUS "STEPS", WHICH IS A MOTION VERB AS WELL AS AN OBJECT, MAY BE LOCATED
 // AS AN OBJECT.)  AND IT ALSO MEANS THE KTAB VALUE IS TAKEN MOD 1000.
-var VOCAB = function(id, init) {
+function VOCAB(id, init) {
 	for (var i = 1; i <= TABSIZ; i++) {
 		if (KTAB[i] == -1) {
 			if (init < 0) return -1; else throw 'REQUIRED VOCABULARY WORD NOT FOUND';
@@ -2387,13 +2389,13 @@ var VOCAB = function(id, init) {
 };
  
 // PERMANENTLY ELIMINATE "OBJECT" BY MOVING TO A NON-EXISTENT LOCATION.
-var DSTROY = function(object) {
+function DSTROY(object) {
 	MOVE(object,0);
 };
 
 // JUGGLE AN OBJECT BY PICKING IT UP AND PUTTING IT DOWN AGAIN, THE PURPOSE
 // BEING TO GET THE OBJECT TO THE FRONT OF THE CHAIN OF THINGS AT ITS LOC.
-var JUGGLE = function(object) {
+function JUGGLE(object) {
 	var i = PLACE[object];
 	var j = FIXED[object];
 	MOVE(object, i);
@@ -2403,7 +2405,7 @@ var JUGGLE = function(object) {
 // PLACE ANY OBJECT ANYWHERE BY PICKING IT UP AND DROPPING IT.  MAY ALREADY BE
 // TOTING, IN WHICH CASE THE CARRY IS A NO-OP.  MUSTN'T PICK UP OBJECTS WHICH
 // ARE NOT AT ANY LOC, SINCE CARRY WANTS TO REMOVE OBJECTS FROM ATLOC CHAINS.
-var MOVE = function(object, where) {
+function MOVE(object, where) {
 	var from;
 	if (object > 100) from = FIXED[object - 100];
 	else from = PLACE[object];
@@ -2413,7 +2415,7 @@ var MOVE = function(object, where) {
 
 // PUT IS THE SAME AS MOVE, EXCEPT IT RETURNS A VALUE USED TO SET UP THE
 // NEGATED PROP VALUES FOR THE REPOSITORY OBJECTS.
-var PUT = function(object, where, pval) {
+function PUT(object, where, pval) {
 	MOVE(object, where);
 	return (-1) - pval;
 };
@@ -2421,7 +2423,7 @@ var PUT = function(object, where, pval) {
 // START TOTING AN OBJECT, REMOVING IT FROM THE LIST OF THINGS AT ITS FORMER
 // LOCATION.  INCR HOLDNG UNLESS IT WAS ALREADY BEING TOTED.  IF OBJECT>100
 // (MOVING "FIXED" SECOND LOC), DON'T CHANGE PLACE OR HOLDNG.
-var CARRY = function(object, where) {
+function CARRY(object, where) {
 	if (object <= 100 && PLACE[object] != -1) {
 		PLACE[object] = -1;
 		HOLDNG++;
@@ -2437,7 +2439,7 @@ var CARRY = function(object, where) {
 
 // PLACE AN OBJECT AT A GIVEN LOC, PREFIXING IT ONTO THE ATLOC LIST.  DECR
 // HOLDNG IF THE OBJECT WAS BEING TOTED.
-var DROP = function(object, where) {
+function DROP(object, where) {
 	if (object > 100) FIXED[object - 100] = where;
 	else {
 		if (PLACE[object] == -1) HOLDNG--;
@@ -2451,13 +2453,13 @@ var DROP = function(object, where) {
 			
 // WIZARDRY ROUTINES (START, MAINT, WIZARD, HOURS(X), NEWHRS(X), MOTD, POOF)
 // Skip these alltogether
-var START = function() {};
-var MAINT = function() {};
-var WIZARD = function() {return false;};
-var HOURS = function() {return;};
-var NEWHRS = function() {return;};
-var MOTD = function(alter) {return;};
-var POOF = function() {
+function START() {};
+function MAINT() {};
+function WIZARD() {return false;};
+function HOURS() {return;};
+function NEWHRS() {return;};
+function MOTD(alter) {return;};
+function POOF() {
 	WKDAY='00777400';
 	WKEND=0;
 	HOLID=0;
@@ -2473,29 +2475,29 @@ var POOF = function() {
 // No real need ...
 
 // RETURN VAL LEFT-SHIFTED (LOGICALLY) DIST BITS (RIGHT-SHIFT IF DIST<0).
-var SHIFT = function(val, dist) {
+function SHIFT(val, dist) {
 	if (dist >= 0) return (val << dist);
 	else return (val >> Math.abs(dist));
 };
 
 // RAN RETURNS A VALUE UNIFORMLY SELECTED BETWEEN 0 AND RANGE-1. 
-var RAN = function(range) {
+function RAN(range) {
 	return (range * Math.random())>>0; // right shift 0 to make this integer (alt. Math.floor)
 };
 
 // RETURN THE DATE AND TIME IN D AND T. (won't because javascript won't modify d and t)
-var DATIME = function(d, t) {
+function DATIME(d, t) {
 	return;
 };
 
 // EXITS, AFTER ISSUING REMINDER TO SAVE NEW CORE IMAGE. No core in javascript (typical mainframe behavior)
-var CIAO = function() {
+function CIAO() {
 	throw 'Be sure to save your core-image...';
 };
 
 // THE FOLLOWING CONDITIONS ARE CURRENTLY CONSIDERED FATAL BUGS.  NUMBERS < 20
 // ARE DETECTED WHILE READING THE DATABASE; THE OTHERS OCCUR AT "RUN TIME".
-var BUG = function(num) {
+function BUG(num) {
 	var mssg = '';
 	switch (num) {
 		case 0: mssg = 'MESSAGE LINE > 70 CHARACTERS'; break;

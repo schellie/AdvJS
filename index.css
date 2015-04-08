@@ -1,5 +1,5 @@
 output#statusLoc {
-  	width: 420px;
+  	width: 465px; // 420
   	/*text-shadow: 0px -1px #181A20; */
 	font-family: Arial, Helvetica, sans-serif;
 	font-size: 11px;
@@ -52,7 +52,7 @@ output#statusMoves {
 	float: left;
 	padding: 9px;
 	height: 620px; 
-	width: 570px;
+	width: 615px; // 570
 }
 
 .display-text {
@@ -69,7 +69,7 @@ output#statusMoves {
 }
 
 input {
-	width: 555px;
+	width: 600px; // 555
     font-size: 12px;
     color: black;
 	/* add gradient */
@@ -88,9 +88,9 @@ input {
 textarea#displayText 
 { 
 	height: 380px;		/* height of main text display area */
-	width: 555px;		/* width of main text display area */
+	width: 600px;		/* width of main text display area 555*/
   	font-size: 13px;
-  	font-family: sans-serif;
+  	font-family: Courier New;
 	resize: none;
 }
 
