@@ -729,197 +729,200 @@ start();
 
 function start() {
 	
+	// START-UP, DWARF STUFF
+	// 1
+	// DEMO = START(0) -> no demos 
+	// CALL MOTD( false) 
+	I = RAN(1);
 	HINTED[3] = YES(65,1,0); // Check if he wants a hint
 	NEWLOC = 1; // Set the new location
-	LIMIT = 330; // The limit is 330 moves unless he has taken a hint
+	//SETUP = 3
 	if (HINTED[3]) LIMIT = 1000;
+	else LIMIT = 330; // The limit is 330 moves unless he has taken a hint
+	
 	// start calling functions
 	
-}
-//No demos shall be given
-//1	DEMO = START(0)
-//	CALL MOTD( false) 
-
-//??
-//	I = RAN(1) 
-
-
-
-//
-//C  CAN'T LEAVE CAVE ONCE IT'S CLOSING (EXCEPT BY MAIN OFFICE) .
-//we come back here...
-//2	if (NEWLOC >=  9 || NEWLOC == 0 ||  !CLOSNG) GOTO 71
-//	CALL RSPEAK(130) 
-//	NEWLOC = LOC
-//	if ( !PANIC) CLOCK2 = 15
-//	PANIC =  true
-//
-//C  SEE IF A DWARF HAS SEEN HIM AND HAS COME FROM WHERE HE WANTS TO GO.  IF SO,
-//C  THE DWARF'S BLOCKING HIS WAY.  IF COMING FROM PLACE FORBIDDEN TO PIRATE
-//C  (DWARVES ROOTED IN PLACE)  LET HIM GET OUT (AND ATTACKED) .
-//
-//71	if (NEWLOC == LOC || FORCED(LOC)  || BITSET(LOC,3) ) GOTO 74
+	// CAN'T LEAVE CAVE ONCE IT'S CLOSING (EXCEPT BY MAIN OFFICE) .
+	// 2 we come back here...
+	if (NEWLOC <  9 && NEWLOC != 0 && CLOSNG) {
+		RSPEAK(130) ; /* "This exit is closed. Please leave via main office." */
+		NEWLOC = LOC;
+		if (!PANIC) CLOCK2 = 15;
+		PANIC = true;
+	}
+	// SEE IF A DWARF HAS SEEN HIM AND HAS COME FROM WHERE HE WANTS TO GO.  IF SO,
+	// THE DWARF'S BLOCKING HIS WAY.  IF COMING FROM PLACE FORBIDDEN TO PIRATE
+	// (DWARVES ROOTED IN PLACE)  LET HIM GET OUT (AND ATTACKED) .
+	// 71
+	if (NEWLOC != LOC && !FORCED(LOC) && !BITSET(LOC,3)) {
 		for (var I = 1; I <= 5; I++) {
-			if (ODLOC[I] != NEWLOC || !DSEEN[I]) {} // GOTO 73;
-			NEWLOC = LOC;
-			RSPEAK(2);
-			// GOTO 74;
-//73		
-		};
-//74
-		LOC = NEWLOC;
-//
-//C  DWARF STUFF.  SEE EARLIER COMMENTS FOR DESCRIPTION OF VARIABLES.  REMEMBER
-//C  SIXTH DWARF IS PIRATE AND IS THUS VERY DIFFERENT EXCEPT FOR MOTION RULES.
-//
-//C  FIRST OFF, DON'T LET THE DWARVES FOLLOW HIM INTO A PIT OR A WALL.  ACTIVATE
-//C  THE WHOLE MESS THE FIRST TIME HE GETS AS FAR AS THE HALL OF MISTS (LOC 15) .
-//C  IF NEWLOC IS FORBIDDEN TO PIRATE (IN PARTICULAR, IF IT'S BEYOND THE TROLL
-//C  BRIDGE) , BYPASS DWARF STUFF.  THAT WAY PIRATE CAN'T STEAL RETURN TOLL, AND
-//C  DWARVES CAN'T MEET THE BEAR.  ALSO MEANS DWARVES WON'T FOLLOW HIM INTO DEAD
-//C  END IN MAZE, BUT C'EST LA VIE.  THEY'LL WAIT FOR HIM OUTSIDE THE DEAD END.
-//
-//	if (LOC == 0 || FORCED(LOC)  || BITSET(NEWLOC,3) ) GOTO 2000
-//	if (DFLAG ! =  0) GOTO 6000
-//	if (LOC >=  15) DFLAG = 1
-//	GOTO 2000
-//
+			if (ODLOC[I] == NEWLOC && DSEEN[I]) {
+				NEWLOC = LOC;
+				RSPEAK(2); /* A little dwarf with a big knife blocks your way. */
+				break;
+			}
+		}
+	}
+	LOC = NEWLOC;
+	// DWARF STUFF.  SEE EARLIER COMMENTS FOR DESCRIPTION OF VARIABLES.  REMEMBER
+	// SIXTH DWARF IS PIRATE AND IS THUS VERY DIFFERENT EXCEPT FOR MOTION RULES.
+	//
+	// FIRST OFF, DON'T LET THE DWARVES FOLLOW HIM INTO A PIT OR A WALL.  ACTIVATE
+	// THE WHOLE MESS THE FIRST TIME HE GETS AS FAR AS THE HALL OF MISTS (LOC 15) .
+	// IF NEWLOC IS FORBIDDEN TO PIRATE (IN PARTICULAR, IF IT'S BEYOND THE TROLL
+	// BRIDGE) , BYPASS DWARF STUFF.  THAT WAY PIRATE CAN'T STEAL RETURN TOLL, AND
+	// DWARVES CAN'T MEET THE BEAR.  ALSO MEANS DWARVES WON'T FOLLOW HIM INTO DEAD
+	// END IN MAZE, BUT C'EST LA VIE.  THEY'LL WAIT FOR HIM OUTSIDE THE DEAD END.
+	if (LOC != 0 && !FORCED(LOC) && !BITSET(NEWLOC,3)) {
+		if (DFLAG != 0) label6000();
+		else if (LOC >= 15) DFLAG = 1;
+	}
+	//GOTO 2000
+	
+	
+	
+}
+
 //C  WHEN WE ENCOUNTER THE FIRST DWARF, WE KILL 0, 1, OR 2 OF THE 5 DWARVES.  IF
 //C  ANY OF THE SURVIVORS IS AT LOC, REPLACE HIM WITH THE ALTERNATE.
-//
-//6000	
-		if (DFLAG !=  1) {} //GOTO 6010;
-		if (LOC < 15 || PCT(95) ) {} //GOTO 2000;
+function label6000() {
+	// 6000
+	if (DFLAG != 1) label6010();
+	if (LOC >= 15 && !PCT(95)) {
 		DFLAG = 2;
 		for (var I = 1; I <= 2; I++) {
-		J = 1+RAN(5) ;
-		// IF SAVED NOT  =  -1, HE BYPASSED THE "START" CALL.
-//6001	
-		if (PCT(50)  && SAVED == -1) DLOC[J] = 0; }
+			J = 1 + RAN(5);
+			// IF SAVED NOT  =  -1, HE BYPASSED THE "START" CALL.
+			if (PCT(50) && SAVED == -1) DLOC[J] = 0;
+		}
 		for (var I = 1; I <= 5; I++) { 
 			if (DLOC[I] == LOC) DLOC[I] = DALTLC;
-//6002
-			ODLOC[I] = DLOC[I]; }
-		RSPEAK(3) ;
-		DROP(AXE,LOC) ;
-		//GOTO 2000;
-//
-//C  THINGS ARE IN FULL SWING.  MOVE EACH DWARF AT RANDOM, EXCEPT IF HE'S SEEN US
-//C  HE STICKS WITH US.  DWARVES NEVER GO TO LOCS <15.  IF WANDERING AT RANDOM,
-//C  THEY DON'T BACK UP UNLESS THERE'S NO ALTERNATIVE.  IF THEY DON'T HAVE TO
-//C  MOVE, THEY ATTACK.  AND, OF COURSE, DEAD DWARVES DON'T DO MUCH OF ANYTHING.
-//
-//6010	DTOTAL = 0
-//	ATTACK = 0
-//	STICK = 0
-		for (var I = 1; I <= 6; I++) { 
-//	if (DLOC[I] == 0) GOTO 6030
-//	J = 1
-//	KK = DLOC[I]
-//	KK = KEY[KK]
-//	if (KK == 0) GOTO 6016
-//6012	NEWLOC = Math.abs(TRAVEL[KK])/1000 % 1000)
-//	if (NEWLOC > 300 || NEWLOC < 15 || NEWLOC == ODLOC[I]
-//	1	 || (J > 1 && NEWLOC == TK[J-1])  || J >=  20
-//	2	 || NEWLOC == DLOC[I] || FORCED(NEWLOC) 
-//	3	 || (I == 6 && BITSET(NEWLOC,3) ) 
-//	4	 || Math.abs(TRAVEL[KK]) /1000000 == 100) GOTO 6014
-//	TK[J] = NEWLOC
-//	J = J+1
-//6014	KK = KK+1
-//	if (TRAVEL[KK-1] >=  0) GOTO 6012
-//6016	TK[J] = ODLOC[I]
-//	if (J >=  2) J = J-1
-//	J = 1+RAN(J) 
-//	ODLOC[I] = DLOC[I]
-//	DLOC[I] = TK[J]
-//	DSEEN[I] = (DSEEN[I] && LOC >=  15) 
-//	1	 || (DLOC[I] == LOC || ODLOC[I] == LOC) 
-//	if ( !DSEEN[I]) GOTO 6030
-//	DLOC[I] = LOC
-//	if (I ! =  6) GOTO 6027
-//
-//C  THE PIRATE'S SPOTTED HIM.  HE LEAVES HIM ALONE ONCE WE'VE FOUND CHEST.
-//C  K COUNTS IF A TREASURE IS HERE.  IF NOT, AND TALLY = TALLY2 PLUS ONE FOR
-//C  AN UNSEEN CHEST, LET THE PIRATE BE SPOTTED.
-//
-//	if (LOC == CHLOC || PROP[CHEST] >=  0) GOTO 6030
-//	K = 0
-		for (var J = 50; J <= MAXTRS; J++) {
-//C  PIRATE WON'T TAKE PYRAMID FROM PLOVER ROOM OR DARK ROOM (TOO EASY!) .
-//	if (J == PYRAM && (LOC == PLAC[PYRAM]
-//	1	 || LOC == PLAC[EMRALD]) ) GOTO 6020
-//	IDONDX = J
-//	if (TOTING(IDONDX) ) GOTO 6022
-//6020
-	if (HERE(IDONDX) ) K = 1; }
-//	if (TALLY == TALLY2+1 && K == 0 && PLACE[CHEST] == 0
-//	1	 && HERE(LAMP)  && PROP[LAMP] == 1) GOTO 6025
-//	if (ODLOC[6] ! =  DLOC[6] && PCT(20) ) CALL RSPEAK(127) 
-//	GOTO 6030
-//
-//6022	CALL RSPEAK(128) 
-//C  DON'T STEAL CHEST BACK FROM TROLL!
-//	if (PLACE[MESSAG] == 0) CALL MOVE(CHEST,CHLOC) 
-//	CALL MOVE(MESSAG,CHLOC2) 
-		for (var J = 50; J <= MAXTRS; J++) {
-//	if (J == PYRAM && (LOC == PLAC[PYRAM]
-//	1	 || LOC == PLAC[EMRALD]) ) GOTO 6023
-//	IDONDX = J
-//	if (AT(IDONDX)  && FIXED[IDONDX] == 0) 
-//	1 CALL CARRY(IDONDX,LOC) 
-//	if (TOTING(IDONDX) ) CALL DROP(IDONDX,CHLOC) 
-//6023	
+			ODLOC[I] = DLOC[I];
 		}
-//6024	DLOC[6] = CHLOC
-//	ODLOC[6] = CHLOC
-//	DSEEN[6] =  false
-//	GOTO 6030
-//
-//6025	CALL RSPEAK(186) 
-//	CALL MOVE(CHEST,CHLOC) 
-//	CALL MOVE(MESSAG,CHLOC2) 
-//	GOTO 6024
-//
-//C  THIS THREATENING LITTLE DWARF IS IN THE ROOM WITH HIM!
-//
-//6027	DTOTAL = DTOTAL+1
-//	if (ODLOC[I] ! =  DLOC[I]) GOTO 6030
-//	ATTACK = ATTACK+1
-//	if (KNFLOC >=  0) KNFLOC = LOC
-//	if (RAN(1000)  < 95*(DFLAG-2) ) STICK = STICK+1
-//6030	
+		RSPEAK(3); /* A little dwarf just walked around a corner, saw you, threw a little axe at you which missed, cursed, and ran away. */ 
+		DROP(AXE,LOC);
+	}
+}
+
+
+
+// THINGS ARE IN FULL SWING.  MOVE EACH DWARF AT RANDOM, EXCEPT IF HE'S SEEN US
+// HE STICKS WITH US.  DWARVES NEVER GO TO LOCS <15.  IF WANDERING AT RANDOM,
+// THEY DON'T BACK UP UNLESS THERE'S NO ALTERNATIVE.  IF THEY DON'T HAVE TO
+// MOVE, THEY ATTACK.  AND, OF COURSE, DEAD DWARVES DON'T DO MUCH OF ANYTHING.
+function label6010() {
+//6010
+	DTOTAL = 0;
+	ATTACK = 0;
+	STICK = 0;
+	for (var I = 1; I <= 6; I++) { 
+		if (DLOC[I] == 0) continue;
+		J = 1;
+		KK = DLOC[I];
+		KK = KEY[KK];
+		if (KK != 0) {
+			//6012
+			do {
+				NEWLOC = Math.abs(TRAVEL[KK])/1000 % 1000;
+				if (NEWLOC <= 300 && NEWLOC > 15 && NEWLOC != ODLOC[I] && (J <= 1 || NEWLOC != TK[J-1]) && J < 20 && 
+					NEWLOC != DLOC[I] && !FORCED(NEWLOC) && (I != 6 || !BITSET(NEWLOC,3)) && Math.abs(TRAVEL[KK])/1000000 != 100) {
+					TK[J] = NEWLOC;
+					J++;
+				}
+				KK++;
+			} while (TRAVEL[KK-1] >= 0);
 		}
-//
-//C  NOW WE KNOW WHAT'S HAPPENING.  LET'S TELL THE POOR SUCKER ABOUT IT.
-//
-//	if (DTOTAL == 0) GOTO 2000
-//	if (DTOTAL == 1) GOTO 75
-//	TYPE 67,DTOTAL
-//67	FORMAT(/' There are ',I1,' threatening little dwarves in the'
-//	1	,' room with you.') 
-//	GOTO 77
-//75	CALL RSPEAK(4) 
-//77	if (ATTACK == 0) GOTO 2000
-//	if (DFLAG == 2) DFLAG = 3
-//C  IF SAVED NOT  =  -1, HE BYPASSED THE "START" CALL.  DWARVES GET *VERY* MAD!
-//	if (SAVED ! =  -1) DFLAG = 20
-//	if (ATTACK == 1) GOTO 79
-//	TYPE 78,ATTACK
-//78	FORMAT(/' ',I1,' of them throw knives at you!') 
-//	K = 6
-//82	if (STICK > 1) GOTO 83
-//	CALL RSPEAK(K+STICK) 
-//	if (STICK == 0) GOTO 2000
-//	GOTO 84
-//83	TYPE 68,STICK
-//68	FORMAT(/' ',I1,' of them get you!') 
-//84	OLDLC2 = LOC
-//	GOTO 99
-//
-//79	CALL RSPEAK(5) 
-//	K = 52
-//	GOTO 82
+		// 6016
+		TK[J] = ODLOC[I];
+		if (J >= 2) J--;
+		J = 1 + RAN(J); 
+		ODLOC[I] = DLOC[I];
+		DLOC[I] = TK[J];
+		DSEEN[I] = (DSEEN[I] && LOC >= 15) || (DLOC[I] == LOC || ODLOC[I] == LOC); 
+		if (!DSEEN[I]) continue;
+		DLOC[I] = LOC;
+		if (I == 6) {
+			// THE PIRATE'S SPOTTED HIM.  HE LEAVES HIM ALONE ONCE WE'VE FOUND CHEST.
+			// K COUNTS IF A TREASURE IS HERE.  IF NOT, AND TALLY = TALLY2 PLUS ONE FOR
+			// AN UNSEEN CHEST, LET THE PIRATE BE SPOTTED.
+			if (LOC == CHLOC || PROP[CHEST] >=  0) continue;
+			K = 0;
+			for (var J = 50; J <= MAXTRS; J++) {
+				// PIRATE WON'T TAKE PYRAMID FROM PLOVER ROOM OR DARK ROOM (TOO EASY!) .
+				if (J != PYRAM || (LOC != PLAC[PYRAM] && LOC != PLAC[EMRALD])) {
+					IDONDX = J;
+					if (TOTING(IDONDX)) GOTO 6022;
+				}
+				if (HERE(IDONDX)) K = 1;
+			}
+			if (TALLY == TALLY2 + 1 && K == 0 && PLACE[CHEST] == 0 && HERE(LAMP) && PROP[LAMP] == 1) GOTO 6025;
+			if (ODLOC[6] != DLOC[6] && PCT(20) ) CALL RSPEAK(127); /* There are faint rustling noises from the darkness behind you. */
+			GOTO 6030;
+
+	// 6022
+			RSPEAK(128); /* Out from the shadows behind you pounces a bearded pirate!  "Har, har," he chortles, "I'll just take all this 
+			booty and hide it away with me chest deep in the maze!" He snatches your treasure and vanishes into the gloom. */
+			//  DON'T STEAL CHEST BACK FROM TROLL!
+			if (PLACE[MESSAG] == 0) MOVE(CHEST,CHLOC);
+			MOVE(MESSAG,CHLOC2);
+			for (J = 50; J <= MAXTRS; J++) {
+				if (J != PYRAM || (LOC != PLAC[PYRAM] && LOC != PLAC[EMRALD])) {
+					IDONDX = J;
+					if (AT(IDONDX) && FIXED[IDONDX] == 0) CARRY(IDONDX,LOC);
+					if (TOTING(IDONDX)) DROP(IDONDX,CHLOC);
+				}
+			}
+			//6024
+			DLOC[6] = CHLOC;
+			ODLOC[6] = CHLOC;
+			DSEEN[6] = false;
+			GOTO 6030;
+
+			//6025
+			RSPEAK(186); /* There are faint rustling noises from the darkness behind you.  As you turn toward them, the beam of your lamp 
+			falls across a bearded pirate.  He is carrying a large chest.  "Shiver me timbers!" he cries, "I've been spotted!  I'd best 
+			hie meself off to the maze to hide me chest!" with that, he vanishes into the gloom. */
+			MOVE(CHEST, CHLOC);
+			MOVE(MESSAG, CHLOC2); 
+		//	GOTO 6024
+		}
+		// THIS THREATENING LITTLE DWARF IS IN THE ROOM WITH HIM!
+		//6027
+		DTOTAL++;
+		if (ODLOC[I] != DLOC[I]) continue;
+		ATTACK++;
+		if (KNFLOC >= 0) KNFLOC = LOC;
+		if (RAN(1000) < 95*(DFLAG-2)) STICK++;
+		//6030
+	}
+	// NOW WE KNOW WHAT'S HAPPENING.  LET'S TELL THE POOR SUCKER ABOUT IT.
+	if (DTOTAL != 0) {
+		if (DTOTAL == 1) RSPEAK(4);
+		else out('There are ' + DTOTAL + ' threatening little dwarves in the room with you.');
+
+		if (ATTACK != 0) {
+			if (DFLAG == 2) DFLAG = 3;
+			// IF SAVED NOT  =  -1, HE BYPASSED THE "START" CALL.  DWARVES GET *VERY* MAD!
+			if (SAVED != -1) DFLAG = 20;
+			if (ATTACK == 1) {
+				CALL RSPEAK(5); /* one sharp nasty knife is thrown at you! */
+				K = 52; /* It misses! / It gets you! */
+			}
+			else {
+				out(ATTACK + ' of them throw knives at you!');
+				K = 6; /* None of them hit you! / One of them gets you! */
+			}
+			if (STICK > 1) out(STICK + ' of them get you!');
+			else RSPEAK(K + STICK); 
+			if (STICK != 0) {
+				OLDLC2 = LOC;
+				label99dead();
+			}
+		}
+	}
+}
+
+
 //C  DESCRIBE THE CURRENT LOCATION AND (MAYBE)  GET NEXT COMMAND.
 //
 //C  PRINT TEXT FOR CURRENT LOC.
