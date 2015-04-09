@@ -1468,23 +1468,37 @@ function take() {
 		RSPEAK(spk); 
 		return false;
 	}
+	
+	if (OBJ == WATER || OBJ ==  OIL) {
+		if (HERE(BOTTLE) && LIQ() == OBJ) OBJ = BOTTLE;
+		else {
+			if (TOTING(BOTTLE))
+				if (PROP[BOTTLE] == 1) { 
+					OBJ = BOTTLE;
+					return fill();
+				}
+				else { 
+					spk = 105; RSPEAK(spk); return false; 
+					/* Your bottle is already full.*/					
+				}
+			else {
+				spk = 104; RSPEAK(spk); return false;
+				/* You have nothing in which to carry it. */
+			}
+		}
+	}
+
+	if (HOLDNG >= 7) {
+		RSPEAK(92); return false;
+	}
+
+
+
+	
 }
 
 
 
-
-
-//	if (OBJ ! =  WATER && OBJ ! =  OIL) GOTO 9017
-//	if (HERE(BOTTLE)  && LIQ(0)  == OBJ) GOTO 9018
-//	OBJ = BOTTLE
-//	if (TOTING(BOTTLE)  && PROP[BOTTLE] == 1) GOTO 9220
-//	if (PROP[BOTTLE] ! =  1) SPK = 105
-//	if ( !TOTING(BOTTLE) ) SPK = 104
-//	GOTO 2011
-//9018	OBJ = BOTTLE
-//9017	if (HOLDNG < 7) GOTO 9016
-//	CALL RSPEAK(92) 
-//	GOTO 2012
 //9016	if (OBJ ! =  BIRD) GOTO 9014
 //	if (PROP[BIRD] ! =  0) GOTO 9014
 //	if ( !TOTING(ROD) ) GOTO 9013
