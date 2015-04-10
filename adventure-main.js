@@ -1495,7 +1495,29 @@ function take() {
 		RSPEAK(92); return false;
 	}
 
-
+	if (OBJ == BIRD) {
+		if (PROP[BIRD] == 0) {
+			if (TOTING(ROD)) {
+				RSPEAK(26); return false;
+				/* The bird was unafraid when you entered, but as you approach it becomes 
+				disturbed and you cannot catch it. */
+			}
+			else {
+				if (!TOTING(CAGE)) {
+					RSPEAK(27); return false;
+					/* You can catch the bird, but you cannot carry it. */
+				}
+				else PROP[BIRD] = 1;
+			}
+		}
+	}
+	// 9014
+	if ((OBJ == BIRD || OBJ == CAGE) && PROP[BIRD] != 0) CARRY(BIRD+CAGE-OBJ,LOC) 
+	CARRY(OBJ,LOC);
+	K = LIQ(0);
+	if (OBJ == BOTTLE && K != 0) PLACE[K] = -1;
+	RSPEAK(54); /* OK */
+	return true;
 
 	
 }
