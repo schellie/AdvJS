@@ -71,6 +71,9 @@ var DFLAG   = 0;
 var DALTLC  = 18;
 var CHLOC   = 114;
 var CHLOC2  = 140;
+var DTOTAL  = 0;
+var ATTACK  = 0;
+var STICK   = 0;
 
 // MNEMONICS
 var KEYS, LAMP, GRATE, CAGE, ROD, ROD2, STEPS, BIRD, DOOR, PILLOW, SNAKE;
@@ -755,8 +758,8 @@ function start() {
 	// (DWARVES ROOTED IN PLACE)  LET HIM GET OUT (AND ATTACKED) .
 	// 71
 	if (NEWLOC != LOC && !FORCED(LOC) && !BITSET(LOC,3)) {
-		for (var I = 1; I <= 5; I++) {
-			if (ODLOC[I] == NEWLOC && DSEEN[I]) {
+		for (var i = 1; i <= 5; i++) {
+			if (ODLOC[i] == NEWLOC && DSEEN[i]) {
 				NEWLOC = LOC;
 				RSPEAK(2); /* A little dwarf with a big knife blocks your way. */
 				break;
@@ -773,155 +776,167 @@ function start() {
 	// BRIDGE) , BYPASS DWARF STUFF.  THAT WAY PIRATE CAN'T STEAL RETURN TOLL, AND
 	// DWARVES CAN'T MEET THE BEAR.  ALSO MEANS DWARVES WON'T FOLLOW HIM INTO DEAD
 	// END IN MAZE, BUT C'EST LA VIE.  THEY'LL WAIT FOR HIM OUTSIDE THE DEAD END.
+
 	if (LOC != 0 && !FORCED(LOC) && !BITSET(NEWLOC,3)) {
-		if (DFLAG != 0) label6000();
-		else if (LOC >= 15) DFLAG = 1;
+		if (DFLAG == 0) if (LOC >= 15) DFLAG = 1; // reached hall of mists, activate dwarves
+		else if (DFLAG != 1) {
+			DTOTAL = 0;
+			ATTACK = 0;
+			STICK = 0;
+			for (var i = 1; i <= 6; i++) moveDwarf(i);
+			// NOW WE KNOW WHAT'S HAPPENING.  LET'S TELL THE POOR SUCKER ABOUT IT.
+			if (DTOTAL != 0) checkAttack();
+		}
+		else if (LOC >= 15 && !PCT(95)) { // enter Hall of Mists
+			firstDwarf();
+		}
 	}
 	//GOTO 2000
-	
-	
-	
 }
 
-//C  WHEN WE ENCOUNTER THE FIRST DWARF, WE KILL 0, 1, OR 2 OF THE 5 DWARVES.  IF
-//C  ANY OF THE SURVIVORS IS AT LOC, REPLACE HIM WITH THE ALTERNATE.
-function label6000() {
-	// 6000
-	if (DFLAG != 1) label6010();
-	if (LOC >= 15 && !PCT(95)) {
-		DFLAG = 2;
-		for (var I = 1; I <= 2; I++) {
-			J = 1 + RAN(5);
-			// IF SAVED NOT  =  -1, HE BYPASSED THE "START" CALL.
-			if (PCT(50) && SAVED == -1) DLOC[J] = 0;
+// WHEN WE ENCOUNTER THE FIRST DWARF, WE KILL 0, 1, OR 2 OF THE 5 DWARVES.  IF
+// ANY OF THE SURVIVORS IS AT LOC, REPLACE HIM WITH THE ALTERNATE.
+function firstDwarf() {
+	// MET FIRST DWARF, OTHERS START MOVING, NO KNIVES THROWN YET
+	DFLAG = 2; 
+	for (var i = 1; i <= 2; i++) { // 2 times - so max 2 dwarfes killes
+		var j = 1 + RAN(5); // J=1..5
+		// IF SAVED NOT  =  -1, HE BYPASSED THE "START" CALL.
+		if (PCT(50) && SAVED == -1) DLOC[j] = 0; // kill dwarf
+	}
+	for (var i = 1; i <= 5; i++) { // check survivors
+		if (DLOC[i] == LOC) DLOC[i] = DALTLC; // use alt. loc
+			ODLOC[i] = DLOC[i]; // set previous loc
+	}
+	// inform our player
+	RSPEAK(3); /* A little dwarf just walked around a corner, saw you, threw a little axe at you which missed, cursed, and ran away. */ 
+	DROP(AXE,LOC);
+}
+
+function checkAttack() {
+	if (DTOTAL == 1) RSPEAK(4); /* There is a threatening little dwarf in the room with you! */
+	else out('There are ' + DTOTAL + ' threatening little dwarves in the room with you.');
+
+	if (ATTACK != 0) {
+		if (DFLAG == 2) DFLAG = 3; // A knife was thrown 
+		// IF SAVED NOT  =  -1, HE BYPASSED THE "START" CALL.  DWARVES GET *VERY* MAD!
+		if (SAVED != -1) DFLAG = 20;
+		if (ATTACK == 1) { // one knife
+			CALL RSPEAK(5); /* one sharp nasty knife is thrown at you! */
+			K = 52; /* It misses! <> It gets you! */
 		}
-		for (var I = 1; I <= 5; I++) { 
-			if (DLOC[I] == LOC) DLOC[I] = DALTLC;
-			ODLOC[I] = DLOC[I];
+		else { // more knives
+			out(ATTACK + ' of them throw knives at you!');
+			K = 6; /* None of them hit you! <> One of them gets you! */
 		}
-		RSPEAK(3); /* A little dwarf just walked around a corner, saw you, threw a little axe at you which missed, cursed, and ran away. */ 
-		DROP(AXE,LOC);
+		if (STICK > 1) out(STICK + ' of them get you!'); // Multiple wounds
+		else RSPEAK(K + STICK); // Just one, or none at all
+		if (STICK != 0) { // Dead
+			OLDLC2 = LOC;
+			label99dead();
+		}
 	}
 }
-
-
 
 // THINGS ARE IN FULL SWING.  MOVE EACH DWARF AT RANDOM, EXCEPT IF HE'S SEEN US
 // HE STICKS WITH US.  DWARVES NEVER GO TO LOCS <15.  IF WANDERING AT RANDOM,
 // THEY DON'T BACK UP UNLESS THERE'S NO ALTERNATIVE.  IF THEY DON'T HAVE TO
 // MOVE, THEY ATTACK.  AND, OF COURSE, DEAD DWARVES DON'T DO MUCH OF ANYTHING.
-function label6010() {
+function moveDwarf(i) {
 //6010
-	DTOTAL = 0;
-	ATTACK = 0;
-	STICK = 0;
-	for (var I = 1; I <= 6; I++) { 
-		if (DLOC[I] == 0) continue;
-		J = 1;
-		KK = DLOC[I];
-		KK = KEY[KK];
-		if (KK != 0) {
-			//6012
-			do {
-				NEWLOC = Math.abs(TRAVEL[KK])/1000 % 1000;
-				if (NEWLOC <= 300 && NEWLOC > 15 && NEWLOC != ODLOC[I] && (J <= 1 || NEWLOC != TK[J-1]) && J < 20 && 
-					NEWLOC != DLOC[I] && !FORCED(NEWLOC) && (I != 6 || !BITSET(NEWLOC,3)) && Math.abs(TRAVEL[KK])/1000000 != 100) {
-					TK[J] = NEWLOC;
-					J++;
-				}
-				KK++;
-			} while (TRAVEL[KK-1] >= 0);
-		}
+	if (DLOC[i] == 0) return; // Dead dwarf
+	var tk = new Array();
+	var k, j = 1;
+	var kk = KEY[DLOC[i]];
+	if (kk != 0) {
+	//6012
+		do {
+			NEWLOC = Math.abs(TRAVEL[kk])/1000 % 1000;
+			if (NEWLOC <= 300 && NEWLOC > 15 && NEWLOC != ODLOC[i] && (j <= 1 || NEWLOC != tk[j-1]) && j < 20 && NEWLOC != DLOC[i] && !FORCED(NEWLOC) && (i != 6 || !BITSET(NEWLOC,3)) && Math.abs(TRAVEL[kk])/1000000 != 100) {
+				tk[j] = NEWLOC;
+				j++;
+			}
+			kk++;
+		} while (TRAVEL[kk-1] >= 0);
+	}
 		// 6016
-		TK[J] = ODLOC[I];
-		if (J >= 2) J--;
-		J = 1 + RAN(J); 
-		ODLOC[I] = DLOC[I];
-		DLOC[I] = TK[J];
-		DSEEN[I] = (DSEEN[I] && LOC >= 15) || (DLOC[I] == LOC || ODLOC[I] == LOC); 
-		if (!DSEEN[I]) continue;
-		DLOC[I] = LOC;
-		if (I == 6) {
+	tk[j] = ODLOC[i];
+	if (j >= 2) j--;
+	j = 1 + RAN(j); 
+	ODLOC[i] = DLOC[i];
+	DLOC[i] = tk[j];
+	DSEEN[i] = (DSEEN[i] && LOC >= 15) || (DLOC[i] == LOC || ODLOC[i] == LOC); 
+	if (DSEEN[i]) {
+		DLOC[i] = LOC;
+		if (i != 6) {
+			// THIS THREATENING LITTLE DWARF IS IN THE ROOM WITH HIM!
+			DTOTAL++;
+			if (ODLOC[I] == DLOC[I]) {
+				ATTACK++;
+				if (KNFLOC >= 0) KNFLOC = LOC;
+				if (RAN(1000) < 95*(DFLAG-2)) STICK++;
+			}
+		}
+		else { // i == 6
 			// THE PIRATE'S SPOTTED HIM.  HE LEAVES HIM ALONE ONCE WE'VE FOUND CHEST.
 			// K COUNTS IF A TREASURE IS HERE.  IF NOT, AND TALLY = TALLY2 PLUS ONE FOR
 			// AN UNSEEN CHEST, LET THE PIRATE BE SPOTTED.
-			if (LOC == CHLOC || PROP[CHEST] >=  0) continue;
-			K = 0;
-			for (var J = 50; J <= MAXTRS; J++) {
-				// PIRATE WON'T TAKE PYRAMID FROM PLOVER ROOM OR DARK ROOM (TOO EASY!) .
-				if (J != PYRAM || (LOC != PLAC[PYRAM] && LOC != PLAC[EMRALD])) {
-					IDONDX = J;
-					if (TOTING(IDONDX)) GOTO 6022;
+			if(LOC != CHLOC && PROP[CHEST] < 0) { // not at chest location and prop chest < 0 (found chest)
+				var treasure = false; //k
+				for (var j = 50; j <= MAXTRS; j++) { // browse all treasures
+					if (j != PYRAM || (LOC != PLAC[PYRAM] && LOC != PLAC[EMRALD])) {
+						// except pyramid
+						if(TOTING(j)) {
+							takeTreasure(); // holds a treasure, take them all & return
+							return;
+						}
+					}
+					treasure = HERE(j); // treasure is here (but not toting)
 				}
-				if (HERE(IDONDX)) K = 1;
-			}
-			if (TALLY == TALLY2 + 1 && K == 0 && PLACE[CHEST] == 0 && HERE(LAMP) && PROP[LAMP] == 1) GOTO 6025;
-			if (ODLOC[6] != DLOC[6] && PCT(20) ) CALL RSPEAK(127); /* There are faint rustling noises from the darkness behind you. */
-			GOTO 6030;
-
-	// 6022
-			RSPEAK(128); /* Out from the shadows behind you pounces a bearded pirate!  "Har, har," he chortles, "I'll just take all this 
-			booty and hide it away with me chest deep in the maze!" He snatches your treasure and vanishes into the gloom. */
-			//  DON'T STEAL CHEST BACK FROM TROLL!
-			if (PLACE[MESSAG] == 0) MOVE(CHEST,CHLOC);
-			MOVE(MESSAG,CHLOC2);
-			for (J = 50; J <= MAXTRS; J++) {
-				if (J != PYRAM || (LOC != PLAC[PYRAM] && LOC != PLAC[EMRALD])) {
-					IDONDX = J;
-					if (AT(IDONDX) && FIXED[IDONDX] == 0) CARRY(IDONDX,LOC);
-					if (TOTING(IDONDX)) DROP(IDONDX,CHLOC);
+				if (TALLY == TALLY2+1 && !treasure && PLACE[CHEST] == 0 && HERE(LAMP) && PROP[LAMP] == 1) {// spot pirate, reset
+					RSPEAK(186); 
+					// There are faint rustling noises from the darkness behind you.  As you  
+					// turn toward them, the beam of your lamp falls across a bearded pirate. 
+					// He is carrying a large chest.  "Shiver me timbers!" he cries, "I\'ve   
+					// been spotted!  I\'d best hie meself off to the maze to hide me chest!" 
+					// with that, he vanishes into the gloom.                  
+					MOVE(CHEST,CHLOC);
+					MOVE(MESSAG,CHLOC2);
+					DLOC[6] = CHLOC;
+					ODLOC[6] = CHLOC;
+					DSEEN[6] = false;
+					return;
 				}
-			}
-			//6024
-			DLOC[6] = CHLOC;
-			ODLOC[6] = CHLOC;
-			DSEEN[6] = false;
-			GOTO 6030;
-
-			//6025
-			RSPEAK(186); /* There are faint rustling noises from the darkness behind you.  As you turn toward them, the beam of your lamp 
-			falls across a bearded pirate.  He is carrying a large chest.  "Shiver me timbers!" he cries, "I've been spotted!  I'd best 
-			hie meself off to the maze to hide me chest!" with that, he vanishes into the gloom. */
-			MOVE(CHEST, CHLOC);
-			MOVE(MESSAG, CHLOC2); 
-		//	GOTO 6024
-		}
-		// THIS THREATENING LITTLE DWARF IS IN THE ROOM WITH HIM!
-		//6027
-		DTOTAL++;
-		if (ODLOC[I] != DLOC[I]) continue;
-		ATTACK++;
-		if (KNFLOC >= 0) KNFLOC = LOC;
-		if (RAN(1000) < 95*(DFLAG-2)) STICK++;
-		//6030
-	}
-	// NOW WE KNOW WHAT'S HAPPENING.  LET'S TELL THE POOR SUCKER ABOUT IT.
-	if (DTOTAL != 0) {
-		if (DTOTAL == 1) RSPEAK(4);
-		else out('There are ' + DTOTAL + ' threatening little dwarves in the room with you.');
-
-		if (ATTACK != 0) {
-			if (DFLAG == 2) DFLAG = 3;
-			// IF SAVED NOT  =  -1, HE BYPASSED THE "START" CALL.  DWARVES GET *VERY* MAD!
-			if (SAVED != -1) DFLAG = 20;
-			if (ATTACK == 1) {
-				CALL RSPEAK(5); /* one sharp nasty knife is thrown at you! */
-				K = 52; /* It misses! / It gets you! */
-			}
-			else {
-				out(ATTACK + ' of them throw knives at you!');
-				K = 6; /* None of them hit you! / One of them gets you! */
-			}
-			if (STICK > 1) out(STICK + ' of them get you!');
-			else RSPEAK(K + STICK); 
-			if (STICK != 0) {
-				OLDLC2 = LOC;
-				label99dead();
+				if (ODLOC(6) != DLOC(6) && PCT(20)) {
+					RSPEAK(127);
+					// There are faint rustling noises from the darkness behind you.
+				}
 			}
 		}
 	}
 }
 
+// take all treasures for player and notify
+function takeTreasure() {
+	RSPEAK(128);
+	//  Out from the shadows behind you pounces a bearded pirate!  "Har, har," 
+	//  he chortles, "I\'ll just take all this booty and hide it away with me 
+	//  chest deep in the maze!" He snatches your treasure and vanishes into 
+	//  the gloom. 
+	
+	//DON'T STEAL CHEST BACK FROM TROLL!
+	if (PLACE[MESSAG] == 0) MOVE(CHEST, CHLOC); // *message in second maze , chloc=114 (pirate chest)
+	MOVE(MESSAG, CHLOC2); //CHLOC2=140, dead end
+	for (var j = 50; j <= MAXTRS; j++) {
+		if (j != PYRAM || (LOC != PLAC[PYRAM] && LOC != PLAC[EMRALD])) {
+			if (AT(j) && FIXED[j] == 0) CARRY(j,LOC); // take object from location
+			if (TOTING(j)) DROP(j,CHLOC); // drop object at chest-loc
+		}
+	}
+	DLOC[6] = CHLOC;
+	ODLOC[6] = CHLOC;
+	DSEEN[6] = false;
+}
 
 //C  DESCRIBE THE CURRENT LOCATION AND (MAYBE)  GET NEXT COMMAND.
 //
@@ -2383,25 +2398,42 @@ function take() {
 
 // I/O ROUTINES (SPEAK, PSPEAK, RSPEAK, GETIN, YES, A5TOA1)
 
-// PRINT THE MESSAGE WHICH STARTS AT LINES(N).  PRECEDE IT WITH A BLANK LINE
-// UNLESS BLKLIN IS FALSE.
-// screen: indicates direct write to screen 
-function SPEAK(n) { /** retest **/
+/**
+ * SPEAK - outputs message from LINES, in addition returns the message
+ *         which can be used in dialog (see YESX)
+ *         if BLKLIN true the message is preceded with a blank line
+ * @param n message number
+ * @return message to output
+ * ! calls       out parseInt String.substr
+ * ! called by   MSPEAK   PSPEAK   RSPEAK
+ * ! modifies    ** NOTHING **
+ * ! global vars BLKLIN   LINES
+ * ! local vars  I        K        L
+ */
+function SPEAK(n) { /* jsfiddle test ok */
+	var i, k, l;
 	if (n == 0) return '';
 	if (LINES[n].substr(8,3) == '>$<') return '';
 	var mssg = '';
 	var k = n;
 	if (BLKLIN) out('');
-	while (parseInt(LINES[k]) == parseInt(LINES[n])) {
-		out(LINES[k].substr(8)); 
-		mssg += LINES[k].substr(8);
-		k++;
+	while (parseInt(LINES[k++]) == parseInt(LINES[n])) {
+		out(LINES[k-1].substr(8)); 
+		mssg += LINES[k-1].substr(8);
 	}
 	return mssg;
 }
 
-//FIND THE SKIP+1ST MESSAGE FROM MSG AND PRINT IT.  MSG SHOULD BE THE INDEX OF
-//THE INVENTORY MESSAGE FOR OBJECT.  (INVEN+N+1 MESSAGE IS PROP=N MESSAGE).
+/**
+ * PSPEAK - outputs skip+1st message from msg
+ * @param msg index of inventory message for an object (INVENT+N+1 is PROP=N)
+ * @param skip number of messages to skip (status of object)
+ * @return message to output
+ * ! calls       SPEAK
+ * ! called by   ??
+ * ! global vars PTEXT
+ * ! local vars  m
+ */
 function PSPEAK(msg, skip) {
 	var m = PTEXT[msg];
 	if (skip >= 0) m += skip + 1;
