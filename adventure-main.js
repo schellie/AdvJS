@@ -180,12 +180,12 @@ function LIQLOC(loc) { /** test ok **/
 
 // TRUE IF COND(L) HAS BIT N SET (BIT 0 IS UNITS BIT)
 function BITSET(l, n) {
-	return ((COND[L] & 1<<n) != 0);
+	return ((COND[l] & 1<<n) != 0);
 }
 
 // TRUE IF LOC MOVES WITHOUT ASKING FOR INPUT (COND=2)
 function FORCED(loc) { /** test ok **/
-	return (COND[LOC] == 2);
+	return (COND[loc] == 2);
 }
 
 // TRUE IF LOCATION "LOC" IS DARK
@@ -439,7 +439,7 @@ function setup() {
 // SECTIONS 1, 2, 5, 6, 10, 12.  READ MESSAGES AND SET UP POINTERS.
 function parseText(ndx, array, condition) {
 	var loc, 
-		oldloc = 0, 
+		oldloc = 0; 
     condition = typeof condition !== 'undefined' ? condition : false;
 	while (++ndx, loc = parseInt(LINES[ndx]), loc != -1) {
 		if (loc != oldloc) {
@@ -791,214 +791,110 @@ function start() {
 			firstDwarf();
 		}
 	}
-	//GOTO 2000
+	// DESCRIBE THE CURRENT LOCATION AND (MAYBE)  GET NEXT COMMAND.
+	// PRINT TEXT FOR CURRENT LOC.
+	//
+	//2000
+	describeLocation();
+	//2009
+	K = 54;
+	//2010	
+	SPK = K;
+	//2011	
+	RSPEAK(SPK);
+
+	//2012
+	VERB = 0;
+	OBJ = 0;
+
+	// KICK THE RANDOM NUMBER GENERATOR JUST TO ADD VARIETY TO THE CHASE.  ALSO,
+	// IF CLOSING TIME, CHECK FOR ANY OBJECTS BEING TOTED WITH PROP < 0 AND SET
+	// THE PROP TO -1-PROP.  THIS WAY OBJECTS WON'T BE DESCRIBED UNTIL THEY'VE
+	// BEEN PICKED UP AND PUT DOWN SEPARATE FROM THEIR RESPECTIVE PILES.  DON'T
+	// TICK CLOCK1 UNLESS WELL INTO CAVE (AND NOT AT Y2) .
+	if (CLOSED) { //GOTO 2605
+		if (PROP[OYSTER] < 0 && TOTING(OYSTER)) PSPEAK(OYSTER,1);
+		/* Interesting.  There seems to be something written on the underside of the oyster. */
+		for (var i = 1; i <= 100; i++) {
+			if (TOTING(i)  && PROP[i] < 0) PROP[i] = -1-PROP[i];
+		}
+	}
+	//2605
+	WZDARK = DARK();
+	if (KNFLOC > 0 && KNFLOC !=  LOC) KNFLOC = 0;
+	i = RAN(1); 
+//		CALL GETIN(WD1,WD1X,WD2,WD2X) 
 }
 
-// WHEN WE ENCOUNTER THE FIRST DWARF, WE KILL 0, 1, OR 2 OF THE 5 DWARVES.  IF
-// ANY OF THE SURVIVORS IS AT LOC, REPLACE HIM WITH THE ALTERNATE.
-function firstDwarf() {
-	// MET FIRST DWARF, OTHERS START MOVING, NO KNIVES THROWN YET
-	DFLAG = 2; 
-	for (var i = 1; i <= 2; i++) { // 2 times - so max 2 dwarfes killes
-		var j = 1 + RAN(5); // J=1..5
-		// IF SAVED NOT  =  -1, HE BYPASSED THE "START" CALL.
-		if (PCT(50) && SAVED == -1) DLOC[j] = 0; // kill dwarf
+function describeLocation() {
+	console.log(LOC);
+	if (LOC == 0) { 
+		label99dead();
+		return;
 	}
-	for (var i = 1; i <= 5; i++) { // check survivors
-		if (DLOC[i] == LOC) DLOC[i] = DALTLC; // use alt. loc
-			ODLOC[i] = DLOC[i]; // set previous loc
-	}
-	// inform our player
-	RSPEAK(3); /* A little dwarf just walked around a corner, saw you, threw a little axe at you which missed, cursed, and ran away. */ 
-	DROP(AXE,LOC);
-}
-
-function checkAttack() {
-	if (DTOTAL == 1) RSPEAK(4); /* There is a threatening little dwarf in the room with you! */
-	else out('There are ' + DTOTAL + ' threatening little dwarves in the room with you.');
-
-	if (ATTACK != 0) {
-		if (DFLAG == 2) DFLAG = 3; // A knife was thrown 
-		// IF SAVED NOT  =  -1, HE BYPASSED THE "START" CALL.  DWARVES GET *VERY* MAD!
-		if (SAVED != -1) DFLAG = 20;
-		if (ATTACK == 1) { // one knife
-			CALL RSPEAK(5); /* one sharp nasty knife is thrown at you! */
-			K = 52; /* It misses! <> It gets you! */
-		}
-		else { // more knives
-			out(ATTACK + ' of them throw knives at you!');
-			K = 6; /* None of them hit you! <> One of them gets you! */
-		}
-		if (STICK > 1) out(STICK + ' of them get you!'); // Multiple wounds
-		else RSPEAK(K + STICK); // Just one, or none at all
-		if (STICK != 0) { // Dead
+	var KK = STEXT[LOC];
+	if (ABB[LOC] % ABBNUM == 0 || KK == 0) KK = LTEXT[LOC];
+	if (!FORCED(LOC) && DARK()) {
+		if (WZDARK && PCT(35)) {
+			// THE EASIEST WAY TO GET KILLED IS TO FALL INTO A PIT IN PITCH DARKNESS.
+			RSPEAK(23); /* You fell into a pit and broke every bone in your body! */
 			OLDLC2 = LOC;
 			label99dead();
+			return;
 		}
+		else KK = RTEXT[16]; /* It is now pitch dark.  If you proceed you will likely fall into a pit. */
 	}
-}
+	if (TOTING(BEAR)) RSPEAK(141); /* You are being followed by a very large, tame bear. */
+	SPEAK(KK);
 
-// THINGS ARE IN FULL SWING.  MOVE EACH DWARF AT RANDOM, EXCEPT IF HE'S SEEN US
-// HE STICKS WITH US.  DWARVES NEVER GO TO LOCS <15.  IF WANDERING AT RANDOM,
-// THEY DON'T BACK UP UNLESS THERE'S NO ALTERNATIVE.  IF THEY DON'T HAVE TO
-// MOVE, THEY ATTACK.  AND, OF COURSE, DEAD DWARVES DON'T DO MUCH OF ANYTHING.
-function moveDwarf(i) {
-//6010
-	if (DLOC[i] == 0) return; // Dead dwarf
-	var tk = new Array();
-	var k, j = 1;
-	var kk = KEY[DLOC[i]];
-	if (kk != 0) {
-	//6012
-		do {
-			NEWLOC = Math.abs(TRAVEL[kk])/1000 % 1000;
-			if (NEWLOC <= 300 && NEWLOC > 15 && NEWLOC != ODLOC[i] && (j <= 1 || NEWLOC != tk[j-1]) && j < 20 && NEWLOC != DLOC[i] && !FORCED(NEWLOC) && (i != 6 || !BITSET(NEWLOC,3)) && Math.abs(TRAVEL[kk])/1000000 != 100) {
-				tk[j] = NEWLOC;
-				j++;
-			}
-			kk++;
-		} while (TRAVEL[kk-1] >= 0);
-	}
-		// 6016
-	tk[j] = ODLOC[i];
-	if (j >= 2) j--;
-	j = 1 + RAN(j); 
-	ODLOC[i] = DLOC[i];
-	DLOC[i] = tk[j];
-	DSEEN[i] = (DSEEN[i] && LOC >= 15) || (DLOC[i] == LOC || ODLOC[i] == LOC); 
-	if (DSEEN[i]) {
-		DLOC[i] = LOC;
-		if (i != 6) {
-			// THIS THREATENING LITTLE DWARF IS IN THE ROOM WITH HIM!
-			DTOTAL++;
-			if (ODLOC[I] == DLOC[I]) {
-				ATTACK++;
-				if (KNFLOC >= 0) KNFLOC = LOC;
-				if (RAN(1000) < 95*(DFLAG-2)) STICK++;
-			}
-		}
-		else { // i == 6
-			// THE PIRATE'S SPOTTED HIM.  HE LEAVES HIM ALONE ONCE WE'VE FOUND CHEST.
-			// K COUNTS IF A TREASURE IS HERE.  IF NOT, AND TALLY = TALLY2 PLUS ONE FOR
-			// AN UNSEEN CHEST, LET THE PIRATE BE SPOTTED.
-			if(LOC != CHLOC && PROP[CHEST] < 0) { // not at chest location and prop chest < 0 (found chest)
-				var treasure = false; //k
-				for (var j = 50; j <= MAXTRS; j++) { // browse all treasures
-					if (j != PYRAM || (LOC != PLAC[PYRAM] && LOC != PLAC[EMRALD])) {
-						// except pyramid
-						if(TOTING(j)) {
-							takeTreasure(); // holds a treasure, take them all & return
-							return;
-						}
-					}
-					treasure = HERE(j); // treasure is here (but not toting)
-				}
-				if (TALLY == TALLY2+1 && !treasure && PLACE[CHEST] == 0 && HERE(LAMP) && PROP[LAMP] == 1) {// spot pirate, reset
-					RSPEAK(186); 
-					// There are faint rustling noises from the darkness behind you.  As you  
-					// turn toward them, the beam of your lamp falls across a bearded pirate. 
-					// He is carrying a large chest.  "Shiver me timbers!" he cries, "I\'ve   
-					// been spotted!  I\'d best hie meself off to the maze to hide me chest!" 
-					// with that, he vanishes into the gloom.                  
-					MOVE(CHEST,CHLOC);
-					MOVE(MESSAG,CHLOC2);
-					DLOC[6] = CHLOC;
-					ODLOC[6] = CHLOC;
-					DSEEN[6] = false;
-					return;
-				}
-				if (ODLOC(6) != DLOC(6) && PCT(20)) {
-					RSPEAK(127);
-					// There are faint rustling noises from the darkness behind you.
-				}
-			}
-		}
-	}
-}
-
-// take all treasures for player and notify
-function takeTreasure() {
-	RSPEAK(128);
-	//  Out from the shadows behind you pounces a bearded pirate!  "Har, har," 
-	//  he chortles, "I\'ll just take all this booty and hide it away with me 
-	//  chest deep in the maze!" He snatches your treasure and vanishes into 
-	//  the gloom. 
+	if (FORCED(LOC)) // GOTO 8 - figure out new location
+	if (LOC == 33 && PCT(25) && !CLOSNG) RSPEAK(8); /* A hollow voice says "PLUGH". */
 	
-	//DON'T STEAL CHEST BACK FROM TROLL!
-	if (PLACE[MESSAG] == 0) MOVE(CHEST, CHLOC); // *message in second maze , chloc=114 (pirate chest)
-	MOVE(MESSAG, CHLOC2); //CHLOC2=140, dead end
-	for (var j = 50; j <= MAXTRS; j++) {
-		if (j != PYRAM || (LOC != PLAC[PYRAM] && LOC != PLAC[EMRALD])) {
-			if (AT(j) && FIXED[j] == 0) CARRY(j,LOC); // take object from location
-			if (TOTING(j)) DROP(j,CHLOC); // drop object at chest-loc
-		}
-	}
-	DLOC[6] = CHLOC;
-	ODLOC[6] = CHLOC;
-	DSEEN[6] = false;
+	if (!DARK()) describeObjects();
 }
 
-//C  DESCRIBE THE CURRENT LOCATION AND (MAYBE)  GET NEXT COMMAND.
-//
-//C  PRINT TEXT FOR CURRENT LOC.
-//
-//2000	if (LOC == 0) GOTO 99
-//	KK = STEXT[LOC]
-//	if (ABB[LOC] % ABBNUM == 0 || KK == 0) KK = LTEXT[LOC]
-//	if (FORCED(LOC)  ||  !DARK(0) ) GOTO 2001
-//	if (WZDARK && PCT(35) ) GOTO 90
-//	KK = RTEXT[16]
-//2001	if (TOTING(BEAR) ) CALL RSPEAK(141) 
-//	CALL SPEAK(KK) 
-//	K = 1
-//	if (FORCED(LOC) ) GOTO 8
-//	if (LOC == 33 && PCT(25)  &&  !CLOSNG) CALL RSPEAK(8) 
-//
-//C  PRINT OUT DESCRIPTIONS OF OBJECTS AT THIS LOCATION.  IF NOT CLOSING AND
-//C  PROPERTY VALUE IS NEGATIVE, TALLY OFF ANOTHER TREASURE.  RUG IS SPECIAL
-//C  CASE; ONCE SEEN, ITS PROP IS 1 (DRAGON ON IT)  TILL DRAGON IS KILLED.
-//C  SIMILARLY FOR CHAIN; PROP IS INITIALLY 1 (LOCKED TO BEAR) .  THESE HACKS
-//C  ARE BECAUSE PROP = 0 IS NEEDED TO GET FULL SCORE.
-//
-//	if (DARK(0) ) GOTO 2012
-//	ABB[LOC] = ABB[LOC]+1
-//	I = ATLOC[LOC]
-//2004	if (I == 0) GOTO 2012
-//	OBJ = I
-//	if (OBJ > 100) OBJ = OBJ-100
-//	if (OBJ == STEPS && TOTING(NUGGET) ) GOTO 2008
-//	if (PROP[OBJ] >=  0) GOTO 2006
-//	if (CLOSED) GOTO 2008
-//	PROP[OBJ] = 0
-//	if (OBJ == RUG || OBJ == CHAIN) PROP[OBJ] = 1
-//	TALLY = TALLY-1
-//C  IF REMAINING TREASURES TOO ELUSIVE, ZAP HIS LAMP.
-//	if (TALLY == TALLY2 && TALLY ! =  0) LIMIT = MIN0(35,LIMIT) 
-//2006	KK = PROP[OBJ]
-//	if (OBJ == STEPS && LOC == FIXED[STEPS]) KK = 1
-//	CALL PSPEAK(OBJ,KK) 
-//2008	I = LINK[I]
-//	GOTO 2004
-//
-//2009	K = 54
-//2010	SPK = K
-//2011	CALL RSPEAK(SPK) 
-//
-//2012	VERB = 0
-//	OBJ = 0
-//
+// PRINT OUT DESCRIPTIONS OF OBJECTS AT THIS LOCATION.  IF NOT CLOSING AND
+// PROPERTY VALUE IS NEGATIVE, TALLY OFF ANOTHER TREASURE.  RUG IS SPECIAL
+// CASE; ONCE SEEN, ITS PROP IS 1 (DRAGON ON IT)  TILL DRAGON IS KILLED.
+// SIMILARLY FOR CHAIN; PROP IS INITIALLY 1 (LOCKED TO BEAR) .  THESE HACKS
+// ARE BECAUSE PROP = 0 IS NEEDED TO GET FULL SCORE.
+function describeObjects() {
+	
+	ABB[LOC]++;
+	var i = ATLOC[LOC];
+	while (i != 0) {
+		OBJ = i;
+		if (OBJ > 100) OBJ -= -100;
+		if (!CLOSED && (OBJ != STEPS || !TOTING(NUGGET))) {
+			if (PROP[OBJ] <  0) {
+				PROP[OBJ] = 0;
+				if (OBJ == RUG || OBJ == CHAIN) PROP[OBJ] = 1;
+				TALLY--;
+				// IF REMAINING TREASURES TOO ELUSIVE, ZAP HIS LAMP.
+				if (TALLY == TALLY2 && TALLY !=  0) LIMIT = Math.min(35, LIMIT);
+			}
+			if (OBJ == STEPS && LOC == FIXED[STEPS]) PSPEAK(OBJ,1);
+			else PSPEAK(OBJ, PROP[OBJ]);
+		}
+		i = LINK[i];
+	}
+}
+
 //C  CHECK IF THIS LOC IS ELIGIBLE FOR ANY HINTS.  IF BEEN HERE LONG ENOUGH,
 //C  BRANCH TO HELP SECTION (ON LATER PAGE) .  HINTS ALL COME BACK HERE EVENTUALLY
 //C  TO FINISH THE LOOP.  IGNORE "HINTS" < 4 (SPECIAL STUFF, SEE DATABASE NOTES) .
-//
-		for (var HINT = 4; HINT <= HNTMAX; HINT++) {
-//	if (HINTED[HINT]) GOTO 2602
-//	IDONDX = HINT
-//	if ( !BITSET(LOC,IDONDX) ) HINTLC[HINT] = -1
-//	HINTLC[HINT] = HINTLC[HINT]+1
-//	if (HINTLC[HINT] >=  HINTS[HINT,1]) GOTO 40000
-//2602
-			}
+function checkHints() {
+	for (var HINT = 4; HINT <= HNTMAX; HINT++) {
+		if (!HINTED[HINT]) {
+			if (!BITSET(LOC, HINT)) HINTLC[HINT] = -1;
+			HINTLC[HINT]++;
+			if (HINTLC[HINT] >=  HINTS[HINT][1]) offerHint();
+		}
+	}
+}
+
+
+
 //
 //C  KICK THE RANDOM NUMBER GENERATOR JUST TO ADD VARIETY TO THE CHASE.  ALSO,
 //C  IF CLOSING TIME, CHECK FOR ANY OBJECTS BEING TOTED WITH PROP < 0 AND SET
@@ -1320,13 +1216,9 @@ function takeTreasure() {
 //C  HEAVEN HELP HIM IF HE TRIES TO XYZZY BACK INTO THE CAVE WITHOUT THE LAMP!) .
 //C  OLDLOC IS ZAPPED SO HE CAN'T JUST "RETREAT".
 //
-//C  THE EASIEST WAY TO GET KILLED IS TO FALL INTO A PIT IN PITCH DARKNESS.
-//
-//90	CALL RSPEAK(23) 
-//	OLDLC2 = LOC
 //
 //C  OKAY, HE'S DEAD.  LET'S GET ON WITH IT.
-//
+function label99dead() { }
 //99	if (CLOSNG) GOTO 95
 //	YEA = YES(81+NUMDIE*2,82+NUMDIE*2,54) 
 //	NUMDIE = NUMDIE+1
@@ -1370,90 +1262,7 @@ function sayWhat(verb) {
 	// return to 'check hints' (2600)
 }
 
-function verbTakeObj(){
-if (toting(obj)){ 
-	rSpeak(24, BLACK);  /* You are already carrying it!*/ 
-	return false;
-}
-
-if (obj == PLANT && prop[PLANT] <= 0){
-	rSpeak(115, BLACK); /* The plant has exceptionally deep
-                    	   roots and cannot be pulled free.*/
-	return false;
-}
-
-if (obj == BEAR  && prop[BEAR] == 1){ 
-	rSpeak(169, BLACK); /* The bear is still chained to the wall.*/
-return false;
-}
-
-if (obj == CHAIN && prop[CHAIN] != 0){ 
-	rSpeak(170, BLACK);  /* The chain is still locked.*/
-	return false;
-}
-
-if (fixed[obj] != 0){ 
-	rSpeak(25, BLACK);   /* You can't be serious! */ 
-	return false;
-}
-
-if (obj == WATER || obj == OIL){		
-	if (here(BOTTLE) && liq() == obj)
-		obj = BOTTLE;
-	else{
-		if (toting(BOTTLE))
-			if (prop[BOTTLE] == 1){ /* empty */
-				obj = BOTTLE;
-				return verbFill();
-			}
-			else
-				rSpeak(105, BLACK); /* Your bottle is already full.*/
-		else  
-			rSpeak(104, BLACK);     /* You have nothing in which to carry it. */
-		return false;
-	}
-}
-
-if (HOLDNG >= 7){
-	/* You can't carry anything more. You'll have to drop something first. */
-	rSpeak(92, BLACK);
-return false;
-}
-
-if (obj == BIRD && prop[BIRD] == 0 && toting(ROD)){
-	/* The bird was unafraid when you entered, but as you approach it becomes 
- 	   disturbed and you cannot catch it. */
-	rSpeak(26, BLACK); 
-	return false;
-}
-
-if (obj == BIRD && prop[BIRD] == 0 && !toting(CAGE)){
-	/* You can catch the bird, but you cannot carry it. */
-	rSpeak(27, BLACK);
-return false;
-}
-
-/* Otherwise it's good to go ... */
-if (obj == WATER || obj == OIL)
-	if (here(BOTTLE) && liq() == obj)
-		obj = BOTTLE;
-
-if (obj == BIRD && prop[BIRD] == 0)
-	prop[BIRD] = 1; 
-      
-if ((obj == BIRD || obj == CAGE) && prop[BIRD] != 0) 
-	carry(BIRD+CAGE-obj,loc);
-
-carry(obj,loc);
- 
-var kObj = liq();
-if (obj == BOTTLE && kObj != 0) 
-	place[kObj] = -1;
-    
-rSpeak(54, BLACK); /* Ok */
-
-return false;
-}		
+	
 function take() {
 	var spk = ACTSPK[VERB];
 	//C  CARRY, NO OBJECT GIVEN YET.  OK IF ONLY ONE OBJECT PRESENT.
@@ -1527,9 +1336,9 @@ function take() {
 		}
 	}
 	// 9014
-	if ((OBJ == BIRD || OBJ == CAGE) && PROP[BIRD] != 0) CARRY(BIRD+CAGE-OBJ,LOC) 
+	if ((OBJ == BIRD || OBJ == CAGE) && PROP[BIRD] != 0) CARRY(BIRD + CAGE - OBJ, LOC); 
 	CARRY(OBJ,LOC);
-	K = LIQ(0);
+	K = LIQ();
 	if (OBJ == BOTTLE && K != 0) PLACE[K] = -1;
 	RSPEAK(54); /* OK */
 	return true;
@@ -2108,47 +1917,46 @@ function take() {
 //8310	CALL MSPEAK(6) 
 //	CALL HOURS
 //	GOTO 2012
-//C  HINTS
-//
-//C  COME HERE IF HE'S BEEN LONG ENOUGH AT REQUIRED LOC(S)  FOR SOME UNUSED HINT.
-//C  HINT NUMBER IS IN VARIABLE "HINT".  BRANCH TO QUICK TEST FOR ADDITIONAL
-//C  CONDITIONS, THEN COME BACK TO DO NEAT STUFF.  GOTO 40010 IF CONDITIONS ARE
-//C  MET AND WE WANT TO OFFER THE HINT.  GOTO 40020 TO CLEAR HINTLC BACK TO ZERO,
-//C  40030 TO TAKE NO ACTION YET.
-//
-//40000	GOTO (40400,40500,40600,40700,40800,40900) (HINT-3) 
-//C	      CAVE  BIRD  SNAKE MAZE  DARK  WITT
-//	CALL BUG(27) 
-//
-//40010	HINTLC[HINT] = 0
-//	if ( !YES(HINTS[HINT,3],0,54) ) GOTO 2602
-//	TYPE 40012,HINTS[HINT,2]
-//40012 FORMAT(/' I am prepared to give you a hint, but it will cost you',
-//     1	I2,' points.') 
-//	HINTED[HINT] = YES(175,HINTS[HINT,4],54) 
-//	if (HINTED[HINT] && LIMIT > 30) LIMIT = LIMIT+30*HINTS[HINT,2]
-//40020	HINTLC[HINT] = 0
-//40030	GOTO 2602
-//
-//C  NOW FOR THE QUICK TESTS.  SEE DATABASE DESCRIPTION FOR ONE-LINE NOTES.
-//
-//40400	if (PROP[GRATE] == 0 &&  !HERE(KEYS) ) GOTO 40010
-//	GOTO 40020
-//
-//40500	if (HERE(BIRD)  && TOTING(ROD)  && OBJ == BIRD) GOTO 40010
-//	GOTO 40030
-//
-//40600	if (HERE(SNAKE)  &&  !HERE(BIRD) ) GOTO 40010
-//	GOTO 40020
-//
-//40700	if (ATLOC[LOC] == 0 && ATLOC[OLDLOC] == 0
-//	1	 && ATLOC[OLDLC2] == 0 && HOLDNG > 1) GOTO 40010
-//	GOTO 40020
-//
-//40800	if (PROP[EMRALD] ! =  -1 && PROP[PYRAM] == -1) GOTO 40010
-//	GOTO 40020
-//
-//40900	GOTO 40010
+
+// COME HERE IF HE'S BEEN LONG ENOUGH AT REQUIRED LOC(S)  FOR SOME UNUSED HINT.
+// HINT NUMBER IS IN VARIABLE "HINT".  BRANCH TO QUICK TEST FOR ADDITIONAL
+// CONDITIONS, THEN COME BACK TO DO NEAT STUFF.  GOTO 40010 IF CONDITIONS ARE
+// MET AND WE WANT TO OFFER THE HINT.  GOTO 40020 TO CLEAR HINTLC BACK TO ZERO,
+// 40030 TO TAKE NO ACTION YET.
+function offerHint() {
+	// NOW FOR THE QUICK TESTS.  SEE DATABASE DESCRIPTION FOR ONE-LINE NOTES.
+	var conditions = false;
+	switch (HINT) {
+		case 4: //CAVE
+			conditions = (PROP[GRATE] == 0 && !HERE(KEYS));
+			break;
+		case 5: //BIRD
+			conditions = (HERE(BIRD) && TOTING(ROD) && OBJ == BIRD);
+			break;
+		case 6: //SNAKE
+			conditions = (HERE(SNAKE) && !HERE(BIRD));
+			break;
+		case 7: //MAZE
+			conditions = (ATLOC[LOC] == 0 && ATLOC[OLDLOC] == 0 && ATLOC[OLDLC2] == 0 && HOLDNG > 1);
+			break;
+		case 8: //DARK
+			conditions = (PROP[EMRALD] != -1 && PROP[PYRAM] == -1);
+			break;
+		case 9: //WITT
+			conditions = true;
+			break;
+		default: throw 'Hint number exceeds list';
+	}
+	if (conditions) {
+		if (YES(HINTS[HINT][3],0,54)) {
+			out('I am prepared to give you a hint, but it will cost you ' + HINTS[HINT][2] + ' points.');
+			HINTED[HINT] = YES(175,HINTS[HINT][4],54);
+			if (HINTED[HINT] && LIMIT > 30) LIMIT = LIMIT + 30*HINTS[HINT][2];
+		}
+	}
+	HINTLC[HINT] = 0;
+}	
+
 //C  CAVE CLOSING AND SCORING
 //
 //
@@ -2396,6 +2204,155 @@ function take() {
 //
 //	END
 
+
+// WHEN WE ENCOUNTER THE FIRST DWARF, WE KILL 0, 1, OR 2 OF THE 5 DWARVES.  IF
+// ANY OF THE SURVIVORS IS AT LOC, REPLACE HIM WITH THE ALTERNATE.
+function firstDwarf() {
+	// MET FIRST DWARF, OTHERS START MOVING, NO KNIVES THROWN YET
+	DFLAG = 2; 
+	for (var i = 1; i <= 2; i++) { // 2 times - so max 2 dwarfes killes
+		var j = 1 + RAN(5); // J=1..5
+		// IF SAVED NOT  =  -1, HE BYPASSED THE "START" CALL.
+		if (PCT(50) && SAVED == -1) DLOC[j] = 0; // kill dwarf
+	}
+	for (var i = 1; i <= 5; i++) { // check survivors
+		if (DLOC[i] == LOC) DLOC[i] = DALTLC; // use alt. loc
+			ODLOC[i] = DLOC[i]; // set previous loc
+	}
+	// inform our player
+	RSPEAK(3); /* A little dwarf just walked around a corner, saw you, threw a little axe at you which missed, cursed, and ran away. */ 
+	DROP(AXE,LOC);
+}
+
+function checkAttack() {
+	if (DTOTAL == 1) RSPEAK(4); /* There is a threatening little dwarf in the room with you! */
+	else out('There are ' + DTOTAL + ' threatening little dwarves in the room with you.');
+
+	if (ATTACK != 0) {
+		if (DFLAG == 2) DFLAG = 3; // A knife was thrown 
+		// IF SAVED NOT  =  -1, HE BYPASSED THE "START" CALL.  DWARVES GET *VERY* MAD!
+		if (SAVED != -1) DFLAG = 20;
+		if (ATTACK == 1) { // one knife
+			RSPEAK(5); /* one sharp nasty knife is thrown at you! */
+			K = 52; /* It misses! <> It gets you! */
+		}
+		else { // more knives
+			out(ATTACK + ' of them throw knives at you!');
+			K = 6; /* None of them hit you! <> One of them gets you! */
+		}
+		if (STICK > 1) out(STICK + ' of them get you!'); // Multiple wounds
+		else RSPEAK(K + STICK); // Just one, or none at all
+		if (STICK != 0) { // Dead
+			OLDLC2 = LOC;
+			label99dead();
+		}
+	}
+}
+
+// THINGS ARE IN FULL SWING.  MOVE EACH DWARF AT RANDOM, EXCEPT IF HE'S SEEN US
+// HE STICKS WITH US.  DWARVES NEVER GO TO LOCS <15.  IF WANDERING AT RANDOM,
+// THEY DON'T BACK UP UNLESS THERE'S NO ALTERNATIVE.  IF THEY DON'T HAVE TO
+// MOVE, THEY ATTACK.  AND, OF COURSE, DEAD DWARVES DON'T DO MUCH OF ANYTHING.
+function moveDwarf(i) {
+//6010
+	if (DLOC[i] == 0) return; // Dead dwarf
+	var tk = new Array();
+	var j = 1;
+	var kk = KEY[DLOC[i]];
+	if (kk != 0) {
+	//6012
+		do {
+			NEWLOC = Math.abs(TRAVEL[kk])/1000 % 1000;
+			if (NEWLOC <= 300 && NEWLOC > 15 && NEWLOC != ODLOC[i] && (j <= 1 || NEWLOC != tk[j-1]) && j < 20 && NEWLOC != DLOC[i] && !FORCED(NEWLOC) && (i != 6 || !BITSET(NEWLOC,3)) && Math.abs(TRAVEL[kk])/1000000 != 100) {
+				tk[j] = NEWLOC;
+				j++;
+			}
+			kk++;
+		} while (TRAVEL[kk-1] >= 0);
+	}
+		// 6016
+	tk[j] = ODLOC[i];
+	if (j >= 2) j--;
+	j = 1 + RAN(j); 
+	ODLOC[i] = DLOC[i];
+	DLOC[i] = tk[j];
+	DSEEN[i] = (DSEEN[i] && LOC >= 15) || (DLOC[i] == LOC || ODLOC[i] == LOC); 
+	if (DSEEN[i]) {
+		DLOC[i] = LOC;
+		if (i != 6) {
+			// THIS THREATENING LITTLE DWARF IS IN THE ROOM WITH HIM!
+			DTOTAL++;
+			if (ODLOC[I] == DLOC[I]) {
+				ATTACK++;
+				if (KNFLOC >= 0) KNFLOC = LOC;
+				if (RAN(1000) < 95*(DFLAG-2)) STICK++;
+			}
+		}
+		else { // i == 6
+			// THE PIRATE'S SPOTTED HIM.  HE LEAVES HIM ALONE ONCE WE'VE FOUND CHEST.
+			// K COUNTS IF A TREASURE IS HERE.  IF NOT, AND TALLY = TALLY2 PLUS ONE FOR
+			// AN UNSEEN CHEST, LET THE PIRATE BE SPOTTED.
+			if(LOC != CHLOC && PROP[CHEST] < 0) { // not at chest location and prop chest < 0 (found chest)
+				var treasure = false; //k
+				for (var j = 50; j <= MAXTRS; j++) { // browse all treasures
+					if (j != PYRAM || (LOC != PLAC[PYRAM] && LOC != PLAC[EMRALD])) {
+						// except pyramid
+						if(TOTING(j)) {
+							takeTreasure(); // holds a treasure, take them all & return
+							return;
+						}
+					}
+					treasure = HERE(j); // treasure is here (but not toting)
+				}
+				if (TALLY == TALLY2+1 && !treasure && PLACE[CHEST] == 0 && HERE(LAMP) && PROP[LAMP] == 1) {// spot pirate, reset
+					RSPEAK(186); 
+					// There are faint rustling noises from the darkness behind you.  As you  
+					// turn toward them, the beam of your lamp falls across a bearded pirate. 
+					// He is carrying a large chest.  "Shiver me timbers!" he cries, "I\'ve   
+					// been spotted!  I\'d best hie meself off to the maze to hide me chest!" 
+					// with that, he vanishes into the gloom.                  
+					MOVE(CHEST,CHLOC);
+					MOVE(MESSAG,CHLOC2);
+					DLOC[6] = CHLOC;
+					ODLOC[6] = CHLOC;
+					DSEEN[6] = false;
+					return;
+				}
+				if (ODLOC(6) != DLOC(6) && PCT(20)) {
+					RSPEAK(127);
+					// There are faint rustling noises from the darkness behind you.
+				}
+			}
+		}
+	}
+}
+
+// take all treasures for player and notify
+function takeTreasure() {
+	RSPEAK(128);
+	//  Out from the shadows behind you pounces a bearded pirate!  "Har, har," 
+	//  he chortles, "I\'ll just take all this booty and hide it away with me 
+	//  chest deep in the maze!" He snatches your treasure and vanishes into 
+	//  the gloom. 
+	
+	//DON'T STEAL CHEST BACK FROM TROLL!
+	if (PLACE[MESSAG] == 0) MOVE(CHEST, CHLOC); // *message in second maze , chloc=114 (pirate chest)
+	MOVE(MESSAG, CHLOC2); //CHLOC2=140, dead end
+	for (var j = 50; j <= MAXTRS; j++) {
+		if (j != PYRAM || (LOC != PLAC[PYRAM] && LOC != PLAC[EMRALD])) {
+			if (AT(j) && FIXED[j] == 0) CARRY(j,LOC); // take object from location
+			if (TOTING(j)) DROP(j,CHLOC); // drop object at chest-loc
+		}
+	}
+	DLOC[6] = CHLOC;
+	ODLOC[6] = CHLOC;
+	DSEEN[6] = false;
+}
+
+	
+	
+	
+	
 // I/O ROUTINES (SPEAK, PSPEAK, RSPEAK, GETIN, YES, A5TOA1)
 
 /**
@@ -2403,15 +2360,9 @@ function take() {
  *         which can be used in dialog (see YESX)
  *         if BLKLIN true the message is preceded with a blank line
  * @param n message number
- * @return message to output
- * ! calls       out parseInt String.substr
- * ! called by   MSPEAK   PSPEAK   RSPEAK
- * ! modifies    ** NOTHING **
- * ! global vars BLKLIN   LINES
- * ! local vars  I        K        L
+ * @returns message to output
  */
 function SPEAK(n) { /* jsfiddle test ok */
-	var i, k, l;
 	if (n == 0) return '';
 	if (LINES[n].substr(8,3) == '>$<') return '';
 	var mssg = '';
@@ -2428,11 +2379,7 @@ function SPEAK(n) { /* jsfiddle test ok */
  * PSPEAK - outputs skip+1st message from msg
  * @param msg index of inventory message for an object (INVENT+N+1 is PROP=N)
  * @param skip number of messages to skip (status of object)
- * @return message to output
- * ! calls       SPEAK
- * ! called by   ??
- * ! global vars PTEXT
- * ! local vars  m
+ * @returns message to output
  */
 function PSPEAK(msg, skip) {
 	var m = PTEXT[msg];
@@ -2440,13 +2387,21 @@ function PSPEAK(msg, skip) {
 	return SPEAK(m);
 }
 
-//PRINT THE I-TH "RANDOM" MESSAGE (SECTION 6 OF DATABASE).
+/**
+ * RSPEAK - outputs the i-th 'random' message (Section 6 of database) 
+ * @param i number of message to output
+ * @returns message to output
+ */
 function RSPEAK(i) {
 	if (i != 0) return SPEAK(RTEXT[i]);
 	else return '';
 }
 
-//PRINT THE I-TH "MAGIC" MESSAGE (SECTION 12 OF DATABASE).
+/**
+ * MSPEAK - outputs the i-th 'magic' message (Section 12 of database) 
+ * @param i number of message to output
+ * @returns message to output
+ */
 function MSPEAK(i) {
 	if (i != 0) return SPEAK(MTEXT[i]);
 	else return '';
@@ -2504,19 +2459,38 @@ function MSPEAK(i) {
 		END
 */
 
-
-//CALL YESX (BELOW) WITH MESSAGES FROM SECTION 6.
+/**
+ * YES - call YESX with messages from section 6.
+ * @param x question to ask
+ * @param y reply when OK 
+ * @param z reply when Cancel
+ * @returns true when OK, false when Cancel
+ */
 function YES(x, y, z) { /** as this is the only one pointing to YESX, it can be incorporated **/
 	return YESX(x, y, z, RSPEAK);
 }
 
-//CALL YESX (BELOW) WITH MESSAGES FROM SECTION 12.
+/**
+ * YESM - call YESX with messages from section 12.
+ * @param x question to ask
+ * @param y reply when OK 
+ * @param z reply when Cancel
+ * @returns true when OK, false when Cancel
+ */
 function YESM(x, y, z) { /** won't happen **/
 	return YESX(x, y, z, MSPEAK);
 }
 
-// PRINT MESSAGE X, WAIT FOR YES/NO ANSWER.  IF YES, PRINT Y AND LEAVE YEA
-// TRUE; IF NO, PRINT Z AND LEAVE YEA FALSE.  SPK IS EITHER RSPEAK OR MSPEAK.
+/**
+ * YESX - create dialog (OK/Cancel) with message x (x is also shown on output),
+ *        waits for OK/Cancel answer. If OK, output Y and return true; if Cancel
+ *        output z and return false.
+ * @param x question to ask
+ * @param y reply when OK 
+ * @param z reply when Cancel
+ * @param spk either rspeak or mspeak
+ * @returns true when OK, false when Cancel
+ */
 function YESX(x, y, z, spk) {
 	var reply = false;
 	if (x != 0) {
