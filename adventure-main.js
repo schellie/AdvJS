@@ -145,6 +145,8 @@ var SAVET;
 var YES;
 var START;
 
+var gameOver = false;
+
 // STATEMENT FUNCTIONS
 
 // TRUE IF THE OBJ IS BEING CARRIED
@@ -827,7 +829,6 @@ function start() {
 }
 
 function describeLocation() {
-	console.log(LOC);
 	if (LOC == 0) { 
 		label99dead();
 		return;
@@ -858,6 +859,9 @@ function describeLocation() {
 // CASE; ONCE SEEN, ITS PROP IS 1 (DRAGON ON IT)  TILL DRAGON IS KILLED.
 // SIMILARLY FOR CHAIN; PROP IS INITIALLY 1 (LOCKED TO BEAR) .  THESE HACKS
 // ARE BECAUSE PROP = 0 IS NEEDED TO GET FULL SCORE.
+/**
+ * 
+ */
 function describeObjects() {
 	
 	ABB[LOC]++;
@@ -927,12 +931,15 @@ function checkHints() {
 //	if (CLOCK1 == 0) GOTO 10000
 //	if (CLOCK1 < 0) CLOCK2 = CLOCK2-1
 //	if (CLOCK2 == 0) GOTO 11000
+		
+	checkLamp();	
 //	if (PROP[LAMP] == 1) LIMIT = LIMIT-1
 //	if (LIMIT <=  30 && HERE(BATTER)  && PROP[BATTER] == 0
 //	1	 && HERE(LAMP) ) GOTO 12000
 //	if (LIMIT == 0) GOTO 12400
 //	if (LIMIT < 0 && LOC <=  8) GOTO 12600
 //	if (LIMIT <=  30) GOTO 12200
+	
 //19999	K = 43
 //	if (LIQLOC(LOC)  == WATER) K = 70
 //	if (WD1 == 'ENTER' && (WD2 == 'STREA' || WD2 == 'WATER') ) 
@@ -999,6 +1006,48 @@ function checkHints() {
 //C	     HOUR
 //	CALL BUG(24) 
 //
+/**
+ * verb	intrans	trans	function
+ * TAKE	8010	9010	actionTake
+ * DROP	8000	9020	actionDiscard
+ * SAY	8000	9030	actionSay
+ * OPEN	8040	9040	actionLockUnlock
+ * NOTH	2009	2009	
+ * LOCK	8040	9040	actionLockUnlock
+ * ON	9070	9070	actionLightOn
+ * OFF	9080	9080	actionLightOff
+ * WAVE	8000	9090	actionWave
+ * CALM	8000	2011	
+ * WALK	2011	2011	
+ * KILL	9120	9120	actionAttack
+ * POUR	9130	9130	actionPour
+ * EAT	8140	9140	actionEat
+ * DRNK	9150	9150	actionDrink
+ * RUB	8000	9160	actionRub
+ * TOSS	8000	9170	actionThrow
+ * QUIT	8180	2011	actionQuit
+ * FIND	8000	9190	actionFind
+ * INVN	8200	9190	
+ * FEED	8000	9210	actionFeed
+ * FILL	9220	9220	actionFill
+ * BLST	9230	9230	actionBlast
+ * SCOR	8240	2011	actionScore
+ * FOO	8250	2011	actionFoo
+ * BRF	8260	2011	actionBrief
+ * READ	8270	9270	actionRead
+ * BREK	8000	9280	actionBreak
+ * WAKE	8000	9290	actionWake
+ * SUSP	8300	2011	actionSuspend
+ * HOUR	8310	2011	actionHours
+ * 		8000			sayWhat()
+ * 		2009
+ * 		2011
+ * 		8200
+ */
+	
+		
+		
+		
 //C  ANALYSE AN OBJECT WORD.  SEE IF THE THING IS HERE, WHETHER WE'VE GOT A VERB
 //C  YET, AND SO ON.  OBJECT MUST BE HERE UNLESS VERB IS "FIND" OR "INVENT(ORY) "
 //C  (AND NO NEW VERB YET TO BE ANALYSED) .  WATER AND OIL ARE ALSO FUNNY, SINCE
@@ -1263,7 +1312,7 @@ function sayWhat(verb) {
 }
 
 	
-function take() {
+function actionTake() {
 	var spk = ACTSPK[VERB];
 	//C  CARRY, NO OBJECT GIVEN YET.  OK IF ONLY ONE OBJECT PRESENT.
 	if (OBJ ==  0) { /* Intransitive */
@@ -1367,7 +1416,8 @@ function take() {
 //C  DISCARD OBJECT.  "THROW" ALSO COMES HERE FOR MOST OBJECTS.  SPECIAL CASES FOR
 //C  BIRD (MIGHT ATTACK SNAKE OR DRAGON)  AND CAGE (MIGHT CONTAIN BIRD)  AND VASE.
 //C  DROP COINS AT VENDING MACHINE FOR EXTRA BATTERIES.
-//
+
+function actionDiscard() {
 //9020	if (TOTING(ROD2)  && OBJ == ROD &&  !TOTING(ROD) ) OBJ = ROD2
 //	if ( !TOTING(OBJ) ) GOTO 2011
 //	if (OBJ ! =  BIRD ||  !HERE(SNAKE) ) GOTO 9024
@@ -1416,9 +1466,10 @@ function take() {
 //	CALL PSPEAK(VASE,PROP[VASE]+1) 
 //	if (PROP[VASE] ! =  0) FIXED[VASE] = -1
 //	GOTO 9021
-//
+}
+
 //C  SAY.  ECHO WD2 (OR WD1 IF NO WD2 (SAY WHAT?, ETC.) .)   MAGIC WORDS OVERRIDE.
-//
+function actionSay() {
 //9030	CALL A5TOA1(WD2,WD2X,'".',TK,K) 
 //	if (WD2 == 0) CALL A5TOA1(WD1,WD1X,'".',TK,K) 
 //	if (WD2 ! =  0) WD1 = WD2
@@ -1433,7 +1484,9 @@ function take() {
 //	GOTO 2630
 //
 //C  LOCK, UNLOCK, NO OBJECT GIVEN.  ASSUME VARIOUS THINGS IF PRESENT.
-//
+}
+
+function actionLockUnlock() {
 //8040	SPK = 28
 //	if (HERE(CLAM) ) OBJ = CLAM
 //	if (HERE(OYSTER) ) OBJ = OYSTER
@@ -1498,7 +1551,9 @@ function take() {
 //	if (TOTING(CHAIN) ) CALL DROP(CHAIN,LOC) 
 //	FIXED[CHAIN] = -1
 //	GOTO 2011
-//
+}
+
+function actionLightOn() {
 //C  LIGHT LAMP
 //
 //9070	if ( !HERE(LAMP) ) GOTO 2011
@@ -1508,7 +1563,9 @@ function take() {
 //	CALL RSPEAK(39) 
 //	if (WZDARK) GOTO 2000
 //	GOTO 2012
-//
+}
+
+function actionLightOff() {
 //C  LAMP OFF
 //
 //9080	if ( !HERE(LAMP) ) GOTO 2011
@@ -1516,7 +1573,9 @@ function take() {
 //	CALL RSPEAK(40) 
 //	if (DARK(0) ) CALL RSPEAK(16) 
 //	GOTO 2012
-//
+}
+
+function actionWave() {
 //C  WAVE.  NO EFFECT UNLESS WAVING ROD AT FISSURE.
 //
 //9090	if (( !TOTING(OBJ) )  && (OBJ ! =  ROD ||  !TOTING(ROD2) ) ) 
@@ -1526,16 +1585,19 @@ function take() {
 //	PROP[FISSUR] = 1-PROP[FISSUR]
 //	CALL PSPEAK(FISSUR,2-PROP[FISSUR]) 
 //	GOTO 2012
-//
+}
+
+function actionAttack() {
 //C  ATTACK.  ASSUME TARGET IF UNAMBIGUOUS.  "THROW" ALSO LINKS HERE.  ATTACKABLE
 //C  OBJECTS FALL INTO TWO CATEGORIES: ENEMIES (SNAKE, DWARF, ETC.)   AND OTHERS
 //C  (BIRD, CLAM) .  AMBIGUOUS IF TWO ENEMIES, OR IF NO ENEMIES BUT TWO OTHERS.
 //
 //9120
 	for (var I = 1; I <= 5; I++) {
-			if (DLOC[I] == LOC && DFLAG >=  2) {}//GOTO 9122;
+			if (DLOC[I] == LOC && DFLAG >=  2) {//GOTO 9122;
 //9121	
 			}
+	}
 //	I = 0
 //9122	if (OBJ ! =  0) GOTO 9124
 //	if (I ! =  0) OBJ = DWARF
@@ -1590,7 +1652,9 @@ function take() {
 //	LOC = K
 //	K = NULL
 //	GOTO 8
-//
+}
+
+function actionPour() {
 //C  POUR.  IF NO OBJECT, OR OBJECT IS BOTTLE, ASSUME CONTENTS OF BOTTLE.
 //C  SPECIAL TESTS FOR POURING WATER OR OIL ON PLANT OR RUSTY DOOR.
 //
@@ -1617,7 +1681,9 @@ function take() {
 //	if (OBJ == OIL) PROP[DOOR] = 1
 //	SPK = 113+PROP[DOOR]
 //	GOTO 2011
-//
+}
+
+function actionEat() {
 //C  EAT.  INTRANSITIVE: ASSUME FOOD IF PRESENT, ELSE ASK WHAT.  TRANSITIVE: FOOD
 //C  OK, SOME THINGS LOSE APPETITE, REST ARE RIDICULOUS.
 //
@@ -1631,7 +1697,9 @@ function take() {
 //	1	 || OBJ == DWARF || OBJ == DRAGON || OBJ == TROLL
 //	2	 || OBJ == BEAR) SPK = 71
 //	GOTO 2011
-//
+}
+
+function actionDrink() {
 //C  DRINK.  IF NO OBJECT, ASSUME WATER AND LOOK FOR IT HERE.  IF WATER IS IN
 //C  THE BOTTLE, DRINK THAT, ELSE MUST BE AT A WATER LOC, SO DRINK STREAM.
 //
@@ -1643,12 +1711,16 @@ function take() {
 //	PLACE[WATER] = 0
 //	SPK = 74
 //	GOTO 2011
-//
+}
+
+function actionRub() {
 //C  RUB.  YIELDS VARIOUS SNIDE REMARKS.
 //
 //9160	if (OBJ ! =  LAMP) SPK = 76
 //	GOTO 2011
-//
+}
+
+function actionThrow() {
 //C  THROW.  SAME AS DISCARD UNLESS AXE.  THEN SAME AS ATTACK EXCEPT IGNORE BIRD,
 //C  AND IF DWARF IS PRESENT THEN ONE MIGHT BE KILLED.  (ONLY WAY TO DO SO!) 
 //C  AXE ALSO SPECIAL FOR DRAGON, BEAR, AND TROLL.  TREASURES SPECIAL FOR TROLL.
@@ -1705,13 +1777,19 @@ function take() {
 //	CALL DROP(TROLL2+100,FIXD[TROLL]) 
 //	CALL JUGGLE(CHASM) 
 //	GOTO 2011
-//
-//C  QUIT.  INTRANSITIVE ONLY.  VERIFY INTENT AND EXIT IF THAT'S WHAT HE WANTS.
-//
-//8180	GAVEUP = YES(22,54,54) 
-//8185	if (GAVEUP) GOTO 20000
-//	GOTO 2012
-//
+}
+
+/**
+ * QUIT.  INTRANSITIVE ONLY.  VERIFY INTENT AND EXIT IF THAT'S WHAT HE WANTS.
+ * 8180
+ */
+function actionQuit() {
+	GAVEUP = YES(22,54,54); /* Do you really want to quit now? */
+	if (GAVEUP) tallyScore();
+	//	GOTO 2012
+}
+
+function actionFind() {
 //C  FIND.  MIGHT BE CARRYING IT, OR IT MIGHT BE HERE.  ELSE GIVE CAVEAT.
 //
 //9190	if (AT(OBJ)  || (LIQ(0)  == OBJ && AT(BOTTLE) ) 
@@ -1739,7 +1817,9 @@ function take() {
 		}
 //	if (TOTING(BEAR) ) SPK = 141
 //	GOTO 2011
-//
+}
+
+function actionFeed() {
 //C  FEED.  IF BIRD, NO SEED.  SNAKE, DRAGON, TROLL: QUIP.  IF DWARF, MAKE HIM
 //C  MAD.  BEAR, SPECIAL.
 //
@@ -1777,7 +1857,9 @@ function take() {
 //
 //9215	SPK = 14
 //	GOTO 2011
-//
+}
+
+function actionFill() {
 //C  FILL.  BOTTLE MUST BE EMPTY, AND SOME LIQUID AVAILABLE.  (VASE IS NASTY.) 
 //
 //9220	if (OBJ == VASE) GOTO 9222
@@ -1800,7 +1882,9 @@ function take() {
 //	PROP[VASE] = 2
 //	FIXED[VASE] = -1
 //	GOTO 9024
-//
+}
+
+function actionBlast() {
 //C  BLAST.  NO EFFECT UNLESS YOU'VE GOT DYNAMITE, WHICH IS A NEAT TRICK!
 //
 //9230	if (PROP[ROD2] < 0 ||  !CLOSED) GOTO 2011
@@ -1809,19 +1893,20 @@ function take() {
 //	if (HERE(ROD2) ) BONUS = 135
 //	CALL RSPEAK(BONUS) 
 //	GOTO 20000
-//
-//C  SCORE.  GO TO SCORING SECTION, WHICH WILL RETURN TO 8241 IF SCORNG IS TRUE.
-//
-//8240	SCORNG =  true
-//	GOTO 20000
-//
-//8241	SCORNG =  false
-//	TYPE 8243,SCORE,MXSCOR
-//8243	FORMAT(/' If you were to quit now, you would score',I4
-//	1	,' out of a possible',I4,'.') 
-//	GAVEUP = YES(143,54,54) 
-//	GOTO 8185
-//
+}
+
+/**
+ * SCORE.  GO TO SCORING SECTION, WHICH WILL RETURN IF SCORNG IS TRUE.
+ * 8240
+ */
+function actionScore() {
+	tallyScoreAndEnd(false);
+	out('If you were to quit now, you would score ' + SCORE + ' out of a possible ' + MXSCOR + '.');
+	GAVEUP = YES(143,54,54); /* Do you indeed wish to quit now? */
+	if (GAVEUP) tallyScoreAndEnd(true);
+}
+
+function actionFoo() {
 //C  FEE FIE FOE FOO (AND FUM) .  ADVANCE TO NEXT STATE IF GIVEN IN PROPER ORDER.
 //C  LOOK UP WD1 IN SECTION 3 OF VOCAB TO DETERMINE WHICH WORD WE'VE GOT.  LAST
 //C  WORD ZIPS THE EGGS BACK TO THE GIANT ROOM (UNLESS ALREADY THERE) .
@@ -1846,14 +1931,18 @@ function take() {
 //	CALL MOVE(EGGS,PLAC[EGGS]) 
 //	CALL PSPEAK(EGGS,K) 
 //	GOTO 2012
-//
+}
+
+function actionBrief() {
 //C  BRIEF.  INTRANSITIVE ONLY.  SUPPRESS LONG DESCRIPTIONS AFTER FIRST TIME.
 //
 //8260	SPK = 156
 //	ABBNUM = 10000
 //	DETAIL = 3
 //	GOTO 2011
-//
+}
+
+function actionRead() {
 //C  READ.  MAGAZINES IN DWARVISH, MESSAGE WE'VE SEEN, AND . . . OYSTER?
 //
 //8270	if (HERE(MAGZIN) ) OBJ = MAGZIN
@@ -1871,7 +1960,9 @@ function take() {
 //	1	 ||  !CLOSED) GOTO 2011
 //	HINTED[2] = YES(192,193,54) 
 //	GOTO 2012
-//
+}
+
+function actionBreak() {
 //C  BREAK.  ONLY WORKS FOR MIRROR IN REPOSITORY AND, OF COURSE, THE VASE.
 //
 //9280	if (OBJ == MIRROR) SPK = 148
@@ -1885,13 +1976,23 @@ function take() {
 //	PROP[VASE] = 2
 //	FIXED[VASE] = -1
 //	GOTO 2011
-//
-//C  WAKE.  ONLY USE IS TO DISTURB THE DWARVES.
-//
-//9290	if (OBJ ! =  DWARF ||  !CLOSED) GOTO 2011
-//	CALL RSPEAK(199) 
-//	GOTO 19000
-//
+}
+
+/**
+ * WAKE.  ONLY USE IS TO DISTURB THE DWARVES.
+ * 9290
+ */
+function actionWake() {
+	if (OBJ ==  DWARF || CLOSED) {
+		RSPEAK(199); 
+		/* You prod the nearest dwarf, who wakes up grumpily, takes one look at
+		   you, curses, and grabs for his axe. */         
+		// OH DEAR, HE'S DISTURBED THE DWARVES.
+		wakeDwarves();
+	}
+}
+
+function actionSuspend() {
 //C  SUSPEND.  OFFER TO EXIT LEAVING THINGS RESTARTABLE, BUT REQUIRING A DELAY
 //C  BEFORE RESTARTING (SO CAN'T SAVE THE WORLD BEFORE TRYING SOMETHING RISKY) .
 //C  UPON RESTARTING, SETUP = -1 CAUSES RETURN TO 8305 TO PICK UP AGAIN.
@@ -1911,12 +2012,15 @@ function take() {
 //	SETUP = 3
 //	K = NULL
 //	GOTO 8
-//
+}
+
+function actionHours() {
 //C  HOURS.  REPORT CURRENT NON-PRIME-TIME HOURS.
 //
 //8310	CALL MSPEAK(6) 
 //	CALL HOURS
 //	GOTO 2012
+}
 
 // COME HERE IF HE'S BEEN LONG ENOUGH AT REQUIRED LOC(S)  FOR SOME UNUSED HINT.
 // HINT NUMBER IS IN VARIABLE "HINT".  BRANCH TO QUICK TEST FOR ADDITIONAL
@@ -1988,28 +2092,35 @@ function offerHint() {
 //C  BEEN IN GIANT ROOM (TO GET EGGS) , SO WE CAN REFER TO IT.  ALSO ALSO, HE'S
 //C  GOTTEN THE PEARL, SO WE KNOW THE BIVALVE IS AN OYSTER.  *AND*, THE DWARVES
 //C  MUST HAVE BEEN ACTIVATED, SINCE WE'VE FOUND CHEST.
-//
-//10000	PROP[GRATE] = 0
-//	PROP[FISSUR] = 0
-		for (var I = 1; I <= 6; I++) { 
-			DSEEN[I] =  false;
-//10010
-			DLOC[I] = 0; }
-//	CALL MOVE(TROLL,0) 
-//	CALL MOVE(TROLL+100,0) 
-//	CALL MOVE(TROLL2,PLAC[TROLL]) 
-//	CALL MOVE(TROLL2+100,FIXD[TROLL]) 
-//	CALL JUGGLE(CHASM) 
-//	if (PROP[BEAR] ! =  3) CALL DSTROY(BEAR) 
-//	PROP[CHAIN] = 0
-//	FIXED[CHAIN] = 0
-//	PROP[AXE] = 0
-//	FIXED[AXE] = 0
-//	CALL RSPEAK(129) 
-//	CLOCK1 = -1
-//	CLOSNG =  true
+/**
+ * closeCave
+ * 10000
+ */
+function closeCave() {
+	PROP[GRATE] = 0;
+	PROP[FISSUR] = 0;
+	for (var i = 1; i <= 6; i++) { 
+		DSEEN[I] = false;
+		DLOC[I] = 0; 
+	}
+	MOVE(TROLL, 0);
+	MOVE(TROLL + 100, 0); 
+	MOVE(TROLL2, PLAC[TROLL]);
+	MOVE(TROLL2 + 100, FIXD[TROLL]);
+	JUGGLE(CHASM);
+	if (PROP[BEAR] != 3) DSTROY(BEAR);
+	PROP[CHAIN] = 0;
+	FIXED[CHAIN] = 0;
+	PROP[AXE] = 0;
+	FIXED[AXE] = 0;
+	RSPEAK(129);
+	/* A sepulchral voice reverberating through the cave, says, "Cave closing
+	   soon.  All adventurers exit immediately through main office." */ 
+	CLOCK1 = -1;
+	CLOSNG = true;
 //	GOTO 19999
-//
+}
+
 //C  ONCE HE'S PANICKED, AND CLOCK2 HAS RUN OUT, WE COME HERE TO SET UP THE
 //C  STORAGE ROOM.  THE ROOM HAS TWO LOCS, HARDWIRED AS 115 (NE)  AND 116 (SW) .
 //C  AT THE NE END, WE PLACE EMPTY BOTTLES, A NURSERY OF PLANTS, A BED OF
@@ -2021,192 +2132,229 @@ function offerHint() {
 //C  MAKING THE VARIOUS OBJECTS BE HANDLED DIFFERENTLY.  WE ALSO DROP ALL OTHER
 //C  OBJECTS HE MIGHT BE CARRYING (LEST HE HAVE SOME WHICH COULD CAUSE TROUBLE,
 //C  SUCH AS THE KEYS) .  WE DESCRIBE THE FLASH OF LIGHT AND TRUNDLE BACK.
-//
-//11000	PROP[BOTTLE] = PUT(BOTTLE,115,1) 
-//	PROP[PLANT] = PUT(PLANT,115,0) 
-//	PROP[OYSTER] = PUT(OYSTER,115,0) 
-//	PROP[LAMP] = PUT(LAMP,115,0) 
-//	PROP[ROD] = PUT(ROD,115,0) 
-//	PROP[DWARF] = PUT(DWARF,115,0) 
-//	LOC = 115
-//	OLDLOC = 115
-//	NEWLOC = 115
-//
-//C  LEAVE THE GRATE WITH NORMAL (NON-NEGATIVE PROPERTY) .
-//
-//	FOO = PUT(GRATE,116,0) 
-//	PROP[SNAKE] = PUT(SNAKE,116,1) 
-//	PROP[BIRD] = PUT(BIRD,116,1) 
-//	PROP[CAGE] = PUT(CAGE,116,0) 
-//	PROP[ROD2] = PUT(ROD2,116,0) 
-//	PROP[PILLOW] = PUT(PILLOW,116,0) 
-//
-//	PROP[MIRROR] = PUT(MIRROR,115,0) 
-//	FIXED[MIRROR] = 116
-//
-		for (var I = 1; I <= 100; I++) {
-			IDONDX = I;
-//11010
-			if (TOTING(IDONDX) ) DSTROY(IDONDX); }
-//
-//	CALL RSPEAK(132) 
-//	CLOSED =  true
+/**
+ * enterStorage
+ * 11000
+ */
+function enterStorage() {
+	var storageNE = 115, 
+		storageSW = 116;
+	PROP[BOTTLE] = PUT(BOTTLE, storageNE, 1);
+	PROP[PLANT] = PUT(PLANT, storageNE, 0) ;
+	PROP[OYSTER] = PUT(OYSTER, storageNE, 0);
+	PROP[LAMP] = PUT(LAMP, storageNE, 0);
+	PROP[ROD] = PUT(ROD, storageNE, 0);
+	PROP[DWARF] = PUT(DWARF, storageNE, 0); 
+	LOC = storageNE;
+	OLDLOC = storageNE;
+	NEWLOC = storageNE;
+
+	// LEAVE THE GRATE WITH NORMAL (NON-NEGATIVE PROPERTY) .
+	FOO = PUT(GRATE, storageSW, 0);
+	PROP[SNAKE] = PUT(SNAKE, storageSW, 1);
+	PROP[BIRD] = PUT(BIRD, storageSW, 1);
+	PROP[CAGE] = PUT(CAGE, storageSW, 0);
+	PROP[ROD2] = PUT(ROD2, storageSW, 0);
+	PROP[PILLOW] = PUT(PILLOW, storageSW, 0);
+
+	PROP[MIRROR] = PUT(MIRROR, storageNE, 0);
+	FIXED[MIRROR] = storageSW;
+
+	for (var i = 1; i <= 100; i++) {
+		if (TOTING(i)) DSTROY(i);
+	}
+
+	RSPEAK(132);
+	/* The sepulchral voice entones, "The cave is now closed."  as the echoes
+	   fade, there is a blinding flash of light (and a small puff of orange
+	   smoke). . . .    as your eyes refocus, you look around and find...*/
+	CLOSED = true;
 //	GOTO 2
-//
+}
+
+
 //C  ANOTHER WAY WE CAN FORCE AN END TO THINGS IS BY HAVING THE LAMP GIVE OUT.
 //C  WHEN IT GETS CLOSE, WE COME HERE TO WARN HIM.  WE GO TO 12000 IF THE LAMP
 //C  AND FRESH BATTERIES ARE HERE, IN WHICH CASE WE REPLACE THE BATTERIES AND
 //C  CONTINUE.  12200 IS FOR OTHER CASES OF LAMP DYING.  12400 IS WHEN IT GOES
 //C  OUT, AND 12600 IS IF HE'S WANDERED OUTSIDE AND THE LAMP IS USED UP, IN WHICH
 //C  CASE WE FORCE HIM TO GIVE UP.
-//
-//12000	CALL RSPEAK(188) 
-//	PROP[BATTER] = 1
-//	if (TOTING(BATTER) ) CALL DROP(BATTER,LOC) 
-//	LIMIT = LIMIT+2500
-//	LMWARN =  false
-//	GOTO 19999
-//
-//12200	if (LMWARN ||  !HERE(LAMP) ) GOTO 19999
-//	LMWARN =  true
-//	SPK = 187
-//	if (PLACE[BATTER] == 0) SPK = 183
-//	if (PROP[BATTER] == 1) SPK = 189
-//	CALL RSPEAK(SPK) 
-//	GOTO 19999
-//
-//12400	LIMIT = -1
-//	PROP[LAMP] = 0
-//	if (HERE(LAMP) ) CALL RSPEAK(184) 
-//	GOTO 19999
-//
-//12600	CALL RSPEAK(185) 
-//	GAVEUP =  true
-//	GOTO 20000
-//
+
+
+function checkLamp() {
+	if (PROP[LAMP] == 1) LIMIT--;
+	
+	if (LIMIT <= 30 && HERE(BATTER) && PROP[BATTER] == 0 && HERE(LAMP)) {
+		// 12000
+		RSPEAK(188);
+		/* Your lamp is getting dim. I'm taking the liberty of replacing the batteries.*/
+		PROP[BATTER] = 1;
+		if (TOTING(BATTER)) DROP(BATTER,LOC);
+		LIMIT += 2500;
+		LMWARN = false;
+		return;
+	}
+	if (LIMIT == 0) {
+		LIMIT = -1;
+		PROP[LAMP] = 0;
+		if (HERE(LAMP)) RSPEAK(184); /* Your lamp has run out of power.*/
+		return;
+	}
+	if (LIMIT< 0 && LOC <= 8) {
+		RSPEAK(185); 
+		/* There's not much point in wandering around out here, and you can't
+		   explore the cave without a lamp.  So let's just call it a day.*/
+		GAVEUP = true;
+		tallyScoreAndEnd(true);
+	}
+	if (LIMIT <= 30) {
+		if (!LMWARN && HERE(LAMP)) {
+			LMWARN = true;
+			if (PLACE[BATTER] == 0) RSPEAK(183);
+			/* Your lamp is getting dim.  You'd best start wrapping this up, unless
+		       you can find some fresh batteries.  I seem to recall there's a vending
+		       machine in the maze.  Bring some coins with you.*/
+			else if (PROP[BATTER] == 1) RSPEAK(189);
+			     /* Your lamp is getting dim, and you're out of spare batteries.  You'd
+		            best start wrapping this up.*/
+			else RSPEAK(187);
+			/* Your lamp is getting dim.  You'd best go back for those batteries.*/
+			return;
+		}
+	}
+}
+
+		
 //C  AND, OF COURSE, DEMO GAMES ARE ENDED BY THE WIZARD.
 //
 //13000	CALL MSPEAK(1) 
 //	GOTO 20000
 //
-//C  OH DEAR, HE'S DISTURBED THE DWARVES.
-//
-//19000	CALL RSPEAK(136) 
-//
-//C  EXIT CODE.  WILL EVENTUALLY INCLUDE SCORING.  FOR NOW, HOWEVER, ...
-//
-//C  THE PRESENT SCORING ALGORITHM IS AS FOLLOWS:
-//C     OBJECTIVE:          POINTS:        PRESENT TOTAL POSSIBLE:
-//C  GETTING WELL INTO CAVE   25                    25
-//C  EACH TREASURE < CHEST    12                    60
-//C  TREASURE CHEST ITSELF    14                    14
-//C  EACH TREASURE > CHEST    16                   144
-//C  SURVIVING             (MAX-NUM) *10             30
-//C  NOT QUITTING              4                     4
-//C  REACHING "CLOSNG"        25                    25
-//C  "CLOSED": QUIT/KILLED    10
-//C            KLUTZED        25
-//C            WRONG WAY      30
-//C            SUCCESS        45                    45
-//C  CAME TO WITT'S END        1                     1
-//C  ROUND OUT THE TOTAL       2                     2
-//C                                       TOTAL:   350
-//C  (POINTS CAN ALSO BE DEDUCTED FOR USING HINTS.) 
-//
-//20000	SCORE = 0
-//	MXSCOR = 0
-//
-//C  FIRST TALLY UP THE TREASURES.  MUST BE IN BUILDING AND NOT BROKEN.
-//C  GIVE THE POOR GUY 2 POINTS JUST FOR FINDING EACH TREASURE.
-//
-		for (var I = 50; I <= MAXTRS; I++) { 
-			if (PTEXT[I] == 0) {}//GOTO 20010;
-			K = 12;
-			if (I == CHEST) K = 14;
-			if (I > CHEST) K = 16;
-			if (PROP[I] >=  0) SCORE = SCORE+2;
-			if (PLACE[I] == 3 && PROP[I] == 0) SCORE = SCORE+K-2;
-			MXSCOR = MXSCOR+K;
-//20010	
-			}
-//
-//C  NOW LOOK AT HOW HE FINISHED AND HOW FAR HE GOT.  MAXDIE AND NUMDIE TELL US
-//C  HOW WELL HE SURVIVED.  GAVEUP SAYS WHETHER HE EXITED VIA QUIT.  DFLAG WILL
-//C  TELL US IF HE EVER GOT SUITABLY DEEP INTO THE CAVE.  CLOSNG STILL INDICATES
-//C  WHETHER HE REACHED THE ENDGAME.  AND IF HE GOT AS FAR AS "CAVE CLOSED"
-//C  (INDICATED BY "CLOSED") , THEN BONUS IS ZERO FOR MUNDANE EXITS OR 133, 134,
-//C  135 IF HE BLEW IT (SO TO SPEAK) .
-//
-//	SCORE = SCORE+(MAXDIE-NUMDIE) *10
-//	MXSCOR = MXSCOR+MAXDIE*10
-//	if ( !(SCORNG || GAVEUP) ) SCORE = SCORE+4
-//	MXSCOR = MXSCOR+4
-//	if (DFLAG ! =  0) SCORE = SCORE+25
-//	MXSCOR = MXSCOR+25
-//	if (CLOSNG) SCORE = SCORE+25
-//	MXSCOR = MXSCOR+25
-//	if ( !CLOSED) GOTO 20020
-//	if (BONUS == 0) SCORE = SCORE+10
-//	if (BONUS == 135) SCORE = SCORE+25
-//	if (BONUS == 134) SCORE = SCORE+30
-//	if (BONUS == 133) SCORE = SCORE+45
-//20020	MXSCOR = MXSCOR+45
-//
-//C  DID HE COME TO WITT'S END AS HE SHOULD?
-//
-//	if (PLACE[MAGZIN] == 108) SCORE = SCORE+1
-//	MXSCOR = MXSCOR+1
-//
-//C  ROUND IT OFF.
-//
-//	SCORE = SCORE+2
-//	MXSCOR = MXSCOR+2
-//
-//C  DEDUCT POINTS FOR HINTS.  HINTS < 4 ARE SPECIAL; SEE DATABASE DESCRIPTION.
-//
-		for (var I = 1; I <= HNTMAX; I++) { 
-//20030
-			if (HINTED[I]) SCORE = SCORE-HINTS[I,2]; }
-//
-//C  RETURN TO SCORE COMMAND IF THAT'S WHERE WE CAME FROM.
-//
-//	if (SCORNG) GOTO 8241
-//
-//C  THAT SHOULD BE GOOD ENOUGH.  LET'S TELL HIM ALL ABOUT IT.
-//
-//	TYPE 20100,SCORE,MXSCOR,TURNS
-//20100	FORMAT(///' You scored',I4,' out of a possible',I4,
-//	1	', using',I5,' turns.') 
-//
-	for (var I = 1; I <= CLSSES; I++) { 
-		if (CVAL[I] >=  SCORE) {}; //GOTO 20210;
+
+/**
+ * wakeDwarves
+ * OH DEAR, HE'S DISTURBED THE DWARVES.
+ * 19000
+ */
+function wakeDwarves() {
+		RSPEAK(136);
+		/* The resulting ruckus has awakened the dwarves.  There are now several
+		   threatening little dwarves in the room with you!  Most of them throw
+	       knives at you!  All of them get you! */
+		tallyScoreAndEnd(true);
+}
+
+/**
+ * tallyScoreAndEnd
+ * EXIT CODE.  WILL EVENTUALLY INCLUDE SCORING.  FOR NOW, HOWEVER, ...
+ * @param end true if gameover, false when asking current score
+ * @returns -
+ * 
+ * THE PRESENT SCORING ALGORITHM IS AS FOLLOWS:
+ *     OBJECTIVE:          POINTS:        PRESENT TOTAL POSSIBLE:
+ *  GETTING WELL INTO CAVE   25                    25
+ *  EACH TREASURE < CHEST    12                    60
+ *  TREASURE CHEST ITSELF    14                    14
+ *  EACH TREASURE > CHEST    16                   144
+ *  SURVIVING             (MAX-NUM) *10             30
+ *  NOT QUITTING              4                     4
+ *  REACHING "CLOSNG"        25                    25
+ *  "CLOSED": QUIT/KILLED    10
+ *            KLUTZED        25
+ *            WRONG WAY      30
+ *            SUCCESS        45                    45
+ *  CAME TO WITT'S END        1                     1
+ *  ROUND OUT THE TOTAL       2                     2
+ *                                       TOTAL:   350
+ *  (POINTS CAN ALSO BE DEDUCTED FOR USING HINTS.) 
+ *  
+ *  20000
+ */
+function tallyScoreAndEnd(end) {
+	var k;
+	SCORE = 0;
+	MXSCOR = 0;
+	// FIRST TALLY UP THE TREASURES.  MUST BE IN BUILDING AND NOT BROKEN.
+	// GIVE THE POOR GUY 2 POINTS JUST FOR FINDING EACH TREASURE.
+	for (var i = 50; i <= MAXTRS; i++) { 
+		if (PTEXT[i] != 0) {//GOTO 20010;
+			if (i == CHEST) k = 14;
+			else if (i > CHEST) k = 16;
+			else k = 12;
+			if (PROP[i] >=  0) SCORE += 2;
+			if (PLACE[i] == 3 && PROP[i] == 0) SCORE += k - 2;
+			MXSCOR += k;
+		}
 	}
-//	TYPE 20202
-//20202	FORMAT(/' You just went off my scale!!'/) 
-//	GOTO 25000
-//
-//20210	CALL SPEAK(CTEXT[I]) 
-//	if (I == CLSSES-1) GOTO 20220
-//	K = CVAL[I]+1-SCORE
-//	KK = 's.'
-//	if (K == 1) KK = '. '
-//	TYPE 20212,K,KK
-//20212	FORMAT(/' To achieve the next higher rating, you need',I3,
-//	1	' more point',A2/) 
-//	GOTO 25000
-//
-//20220	TYPE 20222
-//20222	FORMAT(/' To achieve the next higher rating ',
-//	1	'would be a neat trick!'//' Congratulations!!'/) 
-//
-//25000	STOP
-//
-//
-//	END
 
+	// NOW LOOK AT HOW HE FINISHED AND HOW FAR HE GOT.  MAXDIE AND NUMDIE TELL US
+	// HOW WELL HE SURVIVED.  GAVEUP SAYS WHETHER HE EXITED VIA QUIT.  DFLAG WILL
+	// TELL US IF HE EVER GOT SUITABLY DEEP INTO THE CAVE.  CLOSNG STILL INDICATES
+	// WHETHER HE REACHED THE ENDGAME.  AND IF HE GOT AS FAR AS "CAVE CLOSED"
+	// (INDICATED BY "CLOSED") , THEN BONUS IS ZERO FOR MUNDANE EXITS OR 133, 134,
+	// 135 IF HE BLEW IT (SO TO SPEAK) .
 
-// WHEN WE ENCOUNTER THE FIRST DWARF, WE KILL 0, 1, OR 2 OF THE 5 DWARVES.  IF
-// ANY OF THE SURVIVORS IS AT LOC, REPLACE HIM WITH THE ALTERNATE.
+	SCORE += (MAXDIE - NUMDIE) * 10;
+	MXSCOR += MAXDIE * 10;
+	if (end && !GAVEUP) SCORE += 4;
+	MXSCOR += 4;
+	if (DFLAG != 0) SCORE += 25;
+	MXSCOR += 25;
+	if (CLOSNG) SCORE += 25;
+	MXSCOR += 25;
+	if (CLOSED) {
+		switch (BONUS) {
+		case 0: SCORE += 10; break;
+		case 135: SCORE += 25; break;
+		case 134: SCORE += 30; break;
+		case 133: SCORE += 45; break;
+		}
+	}
+	MXSCOR += 45;
+
+	// DID HE COME TO WITT'S END AS HE SHOULD?
+	if (PLACE[MAGZIN] == 108) SCORE += 1;
+	MXSCOR += 1;
+
+	// ROUND IT OFF.
+	SCORE += 2;
+	MXSCOR += 2;
+
+	// DEDUCT POINTS FOR HINTS.  HINTS < 4 ARE SPECIAL; SEE DATABASE DESCRIPTION.
+	for (var i = 1; i <= HNTMAX; i++) { 
+		if (HINTED[i]) SCORE -= HINTS[i][2]; 
+	}
+	
+	// RETURN TO SCORE COMMAND IF THAT'S WHERE WE CAME FROM.
+	if (end) {
+		// THAT SHOULD BE GOOD ENOUGH.  LET'S TELL HIM ALL ABOUT IT.
+		out('You scored ' + SCORE + ' out of a possible ' + MXSCOR + ', using ' +
+				TURNS + ' turns.');
+		var i;
+		for (i = 1; i <= CLSSES; i++) { 
+			if (CVAL[i] >=  SCORE) break; //GOTO 20210;
+		}
+		if (i > CLSSES) out ('You just went off my scale!!');
+		else {
+			SPEAK(CTEXT[i]);
+			if (i == CLSSES - 1) {
+				out('To achieve the next higher rating would be a neat trick!\nCongratulations!!');
+			}
+			else {
+				var k = CVAL[i] + 1 - SCORE;
+				out('To achieve the next higher rating, you need' + k + ' more point' + (k==1?'.':'s.'));
+			}
+		}
+		gameOver = true;
+	}
+}
+
+/**
+ * firstDwarf
+ * WHEN WE ENCOUNTER THE FIRST DWARF, WE KILL 0, 1, OR 2 OF THE 5 DWARVES.  IF
+ * ANY OF THE SURVIVORS IS AT LOC, REPLACE HIM WITH THE ALTERNATE.
+ * @returns - 
+ */
 function firstDwarf() {
 	// MET FIRST DWARF, OTHERS START MOVING, NO KNIVES THROWN YET
 	DFLAG = 2; 
@@ -2224,6 +2372,9 @@ function firstDwarf() {
 	DROP(AXE,LOC);
 }
 
+/**
+ * checkAttack
+ */
 function checkAttack() {
 	if (DTOTAL == 1) RSPEAK(4); /* There is a threatening little dwarf in the room with you! */
 	else out('There are ' + DTOTAL + ' threatening little dwarves in the room with you.');
@@ -2249,10 +2400,15 @@ function checkAttack() {
 	}
 }
 
-// THINGS ARE IN FULL SWING.  MOVE EACH DWARF AT RANDOM, EXCEPT IF HE'S SEEN US
-// HE STICKS WITH US.  DWARVES NEVER GO TO LOCS <15.  IF WANDERING AT RANDOM,
-// THEY DON'T BACK UP UNLESS THERE'S NO ALTERNATIVE.  IF THEY DON'T HAVE TO
-// MOVE, THEY ATTACK.  AND, OF COURSE, DEAD DWARVES DON'T DO MUCH OF ANYTHING.
+/**
+ * moveDwarf
+ * THINGS ARE IN FULL SWING.  MOVE EACH DWARF AT RANDOM, EXCEPT IF HE'S SEEN US
+ * HE STICKS WITH US.  DWARVES NEVER GO TO LOCS <15.  IF WANDERING AT RANDOM,
+ * THEY DON'T BACK UP UNLESS THERE'S NO ALTERNATIVE.  IF THEY DON'T HAVE TO
+ * MOVE, THEY ATTACK.  AND, OF COURSE, DEAD DWARVES DON'T DO MUCH OF ANYTHING.
+ * @param i number of dwarf to process
+ * @returns - 
+ */
 function moveDwarf(i) {
 //6010
 	if (DLOC[i] == 0) return; // Dead dwarf
@@ -2327,7 +2483,10 @@ function moveDwarf(i) {
 	}
 }
 
-// take all treasures for player and notify
+/**
+ * takeTreasure - pirate takes all treasures from player and notify player
+ * @returns -
+ */
 function takeTreasure() {
 	RSPEAK(128);
 	//  Out from the shadows behind you pounces a bearded pirate!  "Har, har," 
