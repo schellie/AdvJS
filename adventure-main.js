@@ -123,7 +123,8 @@ var WD1;
 var WD2;
 var IDONDX;
 var MXSCOR;
-var SCORE;
+var SCORE = 0;
+var TURNS = 0;
 var CLSSES;
 
 var HOLDNG;
@@ -146,6 +147,8 @@ var YES;
 var START;
 
 var gameOver = false;
+var word1 = '';
+var word2 = '';
 
 // STATEMENT FUNCTIONS
 
@@ -224,24 +227,122 @@ function updateStatusBar(score, moves) { /** test ok **/
 
 //Give focus to commandLine if not a touch device. 
 function giveCommandFocus() { /** test ok **/
-    if (!isTouch) commandLine.focus();
+	if (!isTouch) commandLine.focus();
 }
 
 //Get command.
 function getCommand() { /** test ok **/
-    var text = commandLine.value;
-    commandLine.value = '';
-    out('\n' + '> ' + text);
-    //processCommand(text);
-    giveCommandFocus();
+	var text = commandLine.value;
+	commandLine.value = '';
+	out('\n' + '> ' + text);
+	processCommand(text);
+	giveCommandFocus();
 }
 
 function processCommand(text){
-	 parseInput(text);
-	 processInput();
+	var command = parseInput(text);
+	
+	if (command == -1) {
+		if (PCT(20)) RSPEAK(61);  /* What? */
+		else if (PCT(20)) RSPEAK(13);  /* I don't understand that! */
+		else RSPEAK(60);  /* I don't know that word. */
+		return;
+		//GOTO 2600
+	}
+	else {
+		commandType = (command / 1000)>>0;
+		command %= 1000;
+		switch (commandType) {
+			case 0: // motion
+				//goto 8
+				processMove(command);
+				break;
+			case 1: // object
+				processObject(command);
+				break;
+			case 2: // action
+				//goto 4000
+				//VERB = command % 1000;
+				processAction(command);
+				break;
+			case 3: // special
+				//goto 2010
+				if (command >= 1 && command <= 5) actionFoo(command);
+				else RSPEAK(command);
+				break;
+			default: throw 'VOCABULARY TYPE (N/1000) NOT BETWEEN 0 AND 3';
+		}
+		
+	}
+	
+	//processInput();
+	//if (normalInput) processEvents();
+	updateStatusBar(SCORE, TURNS);
+}
 
-	 if (normalInput) processEvents();
-	 updateStatusBar(SCORE, TURNS);
+function processObject(object) { /* needs to be checked on correct processing */
+	var canSee = false;
+	OBJ = object;
+	if (FIXED[object] != LOC && !HERE(object)) {//GOTO 5100
+		if (object == GRATE) {
+			if (LOC == 1 || LOC == 4 || LOC == 7) {
+				processMove(DPRSSN);
+				return;
+			}
+			if (LOC > 9 && LOC < 15) {
+				processMove(ENTRNC);
+				return;
+			}
+		}
+		if (object == DWARF) {
+			for (var i = 1; i <= 5; i++) 
+				if (DLOC[i] == LOC && DFLAG >= 2) canSee = true;
+		}
+		if ((object == LIQ() && HERE(BOTTLE)) || object == LIQLOC(LOC)) canSee = true;
+		if (object == PLANT && AT(PLANT2) && PROP[PLANT2] != 0) {
+			OBJ = PLANT2;
+			canSee = true;
+		}
+		if (object == KNIFE && KNFLOC == LOC) {
+			KNFLOC = -1;
+			RSPEAK(116);
+			/* The dwarves' knives vanish as they strike the walls of the cave.*/
+			return;
+		}
+		if (object == ROD && HERE(ROD2)) {
+			OBJ = ROD2;
+			canSee = true;
+		}
+		//if ((verb == FIND || verb == INVENT) && objWd == ""){}
+	}
+	
+	if (canSee) { 
+		if (WD2 != 0) // GOTO 2800 get second word
+		if (VERB != 0) // GOTO 4090 processAction
+		sayWhatToDo(word1);
+	} 
+	else sayISeeNo(word1);
+
+}
+
+function sayISeeNo(object) {
+	out('I see no ' + object + ' here.');
+}
+
+function sayWhatToDo(object) {
+	out('What do you want to do with the ' + object + '?');
+}
+
+function parseInput(text) {
+	var words = new Array();
+	words = text.match(/\S+/g);
+	word1 = words[0];
+    word2 = (words.length > 1) ? words[1] : '';
+	VERB = 0;
+	OBJ = 0;
+	WD1 = word1.substr(0,5).toUpperCase();
+	WD2 = (word2 == '') ? 0 : word2.substr(0,5).toUpperCase();
+	return VOCAB(WD1,-1);
 }
 
 //C  DESCRIPTION OF THE DATABASE FORMAT
@@ -799,11 +900,11 @@ function start() {
 	//2000
 	describeLocation();
 	//2009
-	K = 54;
+	//K = 54;
 	//2010	
-	SPK = K;
+	//SPK = K;
 	//2011	
-	RSPEAK(SPK);
+	//RSPEAK(SPK);
 
 	//2012
 	VERB = 0;
@@ -1035,8 +1136,8 @@ function checkHints() {
  * FOO	8250	2011	actionFoo
  * BRF	8260	2011	actionBrief
  * READ	8270	9270	actionRead
- * BREK	8000	9280	actionBreak
- * WAKE	8000	9290	actionWake
+ * BREK	8000	9280	actionBreak		in/trans
+ * WAKE	8000	9290	actionWake		in/trans
  * SUSP	8300	2011	actionSuspend
  * HOUR	8310	2011	actionHours
  * 		8000			sayWhat()
@@ -1304,13 +1405,16 @@ function label99dead() { }
 
 // 8000
 // RANDOM INTRANSITIVE VERBS COME HERE.  CLEAR OBJ JUST IN CASE (SEE "ATTACK") .
-function sayWhat(verb) {
-	out(verb + "What?");
+function sayWhat() {
+	out(word1 + "What?");
 	OBJ = 0;
 	return false;
 	// return to 'check hints' (2600)
 }
 
+function sayActionDefault() {
+	RSPEAK(ACTSPK[VERB]); 
+}
 	
 function actionTake() {
 	var spk = ACTSPK[VERB];
@@ -1906,76 +2010,122 @@ function actionScore() {
 	if (GAVEUP) tallyScoreAndEnd(true);
 }
 
-function actionFoo() {
-//C  FEE FIE FOE FOO (AND FUM) .  ADVANCE TO NEXT STATE IF GIVEN IN PROPER ORDER.
-//C  LOOK UP WD1 IN SECTION 3 OF VOCAB TO DETERMINE WHICH WORD WE'VE GOT.  LAST
-//C  WORD ZIPS THE EGGS BACK TO THE GIANT ROOM (UNLESS ALREADY THERE) .
-//
-//8250	K = VOCAB(WD1,3) 
-//	SPK = 42
-//	if (FOOBAR == 1-K) GOTO 8252
-//	if (FOOBAR ! =  0) SPK = 151
-//	GOTO 2011
-//
-//8252	FOOBAR = K
-//	if (K ! =  4) GOTO 2009
-//	FOOBAR = 0
-//	if (PLACE[EGGS] == PLAC[EGGS]
-//	1	 || (TOTING(EGGS)  && LOC == PLAC[EGGS]) ) GOTO 2011
-//C  BRING BACK TROLL IF WE STEAL THE EGGS BACK FROM HIM BEFORE CROSSING.
-//	if (PLACE[EGGS] == 0 && PLACE[TROLL] == 0 && PROP[TROLL] == 0) 
-//	1	PROP[TROLL] = 1
-//	K = 2
-//	if (HERE(EGGS) ) K = 1
-//	if (LOC == PLAC[EGGS]) K = 0
-//	CALL MOVE(EGGS,PLAC[EGGS]) 
-//	CALL PSPEAK(EGGS,K) 
-//	GOTO 2012
+/**
+ * FEE FIE FOE FOO (AND FUM). ADVANCE TO NEXT STATE IF GIVEN IN PROPER ORDER.
+ * LOOK UP WD1 IN SECTION 3 OF VOCAB TO DETERMINE WHICH WORD WE'VE GOT.  LAST
+ * WORD ZIPS THE EGGS BACK TO THE GIANT ROOM (UNLESS ALREADY THERE) .
+ * 8250
+ */
+function actionFoo(fum) {
+	if (fum != FOOBAR + 1) {
+		if (FOOBAR != 0) RSPEAK(151); /* What's the matter, can't you read? Now you'd best start over.*/
+	}
+	else {
+		FOOBAR = fum;
+		if (FOOBAR == 4) {
+			FOOBAR = 0;
+			if (PLACE[EGGS] == PLAC[EGGS] || (TOTING(EGGS) && LOC == PLAC[EGGS])) {
+				RSPEAK(42); /* Nothing happens. */
+			}
+			else {
+				/* BRING BACK TROLL IF WE STEAL THE EGGS BACK FROM HIM BEFORE CROSSING. */
+				if (place[EGGS] == 0 && place[TROLL] == 0 && prop[TROLL] == 0) prop[TROLL] = 1;
+				if (LOC == PLAC[EGGS]) PSPEAK(EGGS, 0); /* There is a large nest here, full of golden eggs! */
+				else if (HERE(EGGS)) PSPEAK(EGGS, 1); /* The nest of golden eggs has vanished! */
+				else PSPEAK(EGGS, 2); /* Done! */
+				MOVE(EGGS, PLAC[EGGS]);
+			}
+		}
+		else {
+			RSPEAK(54) /* OK */
+		}
+	}
 }
 
+/**
+ * BRIEF.  INTRANSITIVE ONLY.  SUPPRESS LONG DESCRIPTIONS AFTER FIRST TIME.
+ * 8260
+ */
 function actionBrief() {
-//C  BRIEF.  INTRANSITIVE ONLY.  SUPPRESS LONG DESCRIPTIONS AFTER FIRST TIME.
-//
-//8260	SPK = 156
-//	ABBNUM = 10000
-//	DETAIL = 3
-//	GOTO 2011
+	if (OBJ != 0) sayActionDefault();
+	else {
+		ABBNUM = 10000;
+		DETAIL = 3;
+		RSPEAK(156);
+		/* Okay, from now on I'll only describe a place in full the first time
+		   you come to it.  To get the full description, say "look".*/
+	}
 }
 
+/**
+ * READ.  MAGAZINES IN DWARVISH, MESSAGE WE'VE SEEN, AND . . . OYSTER?
+ * 8270/9270
+ */
 function actionRead() {
-//C  READ.  MAGAZINES IN DWARVISH, MESSAGE WE'VE SEEN, AND . . . OYSTER?
-//
-//8270	if (HERE(MAGZIN) ) OBJ = MAGZIN
-//	if (HERE(TABLET) ) OBJ = OBJ*100+TABLET
-//	if (HERE(MESSAG) ) OBJ = OBJ*100+MESSAG
-//	if (CLOSED && TOTING(OYSTER) ) OBJ = OYSTER
-//	if (OBJ > 100 || OBJ == 0 || DARK(0) ) GOTO 8000
-//
-//9270	if (DARK(0) ) GOTO 5190
-//	if (OBJ == MAGZIN) SPK = 190
-//	if (OBJ == TABLET) SPK = 196
-//	if (OBJ == MESSAG) SPK = 191
-//	if (OBJ == OYSTER && HINTED[2] && TOTING(OYSTER) ) SPK = 194
-//	if (OBJ ! =  OYSTER || HINTED[2] ||  !TOTING(OYSTER) 
-//	1	 ||  !CLOSED) GOTO 2011
-//	HINTED[2] = YES(192,193,54) 
-//	GOTO 2012
+	if (HERE(MAGZIN)) OBJ = MAGZIN;
+	if (HERE(TABLET)) OBJ = OBJ * 100 + TABLET;
+	if (HERE(MESSAG)) OBJ = OBJ * 100 + MESSAG;
+	if (CLOSED && TOTING(OYSTER)) OBJ = OYSTER;
+	if (OBJ > 100 || OBJ == 0 || DARK(0)) {
+		sayWhat();
+	}
+	else {
+		if (DARK()) sayISeeNo(word2);
+		else {
+			switch (OBJ) {
+				case MAGZIN: /* I'm afraid the magazine is written in dwarvish.*/
+					RSPEAK(190);
+					break;
+				case TABLET: /* Congratulations on bringing light into the dark-room! */
+					RSPEAK(196);
+					break;
+				case MESSAG: /* This is not the maze where the pirate leaves his treasure chest. */
+					RSPEAK(191);
+					break;
+				case OYSTER:
+					if (HINTED[2] && TOTING(OYSTER)) { 
+						RSPEAK(194); /* It says the same thing it did before. */
+					}
+					else if (!CLOSED) {
+						HINTED[2] = YES(192,193,54); 
+						/* Hmmm, this looks like a clue, which means it'll cost you 10 points to
+						   read it.  Should I go ahead and read it anyway? */
+					}
+					break;
+				default:
+					sayActionDefault();
+			}
+		}
+	}
 }
 
+/**
+ * BREAK.  ONLY WORKS FOR MIRROR IN REPOSITORY AND, OF COURSE, THE VASE.
+ * 9280
+ */
 function actionBreak() {
-//C  BREAK.  ONLY WORKS FOR MIRROR IN REPOSITORY AND, OF COURSE, THE VASE.
-//
-//9280	if (OBJ == MIRROR) SPK = 148
-//	if (OBJ == VASE && PROP[VASE] == 0) GOTO 9282
-//	if (OBJ ! =  MIRROR ||  !CLOSED) GOTO 2011
-//	CALL RSPEAK(197) 
-//	GOTO 19000
-//
-//9282	SPK = 198
-//	if (TOTING(VASE) ) CALL DROP(VASE,LOC) 
-//	PROP[VASE] = 2
-//	FIXED[VASE] = -1
-//	GOTO 2011
+	if (OBJ == 0) {
+		sayWhat();
+		return;
+	}
+	if (OBJ == MIRROR) {
+		RSPEAK(148); /* It is too far up for you to reach.*/
+		return;
+	}
+	if (OBJ == VASE && PROP[VASE] == 0) {
+		if (TOTING(VASE)) DROP(VASE, LOC);
+		PROP[VASE] = 2;
+		FIXED[VASE] = -1;
+		RSPEAK(198); /* You have taken the vase and hurled it delicately to the ground.*/
+		return;
+		//	GOTO 2011
+	}
+	if (OBJ ==  MIRROR && CLOSED) {
+		RSPEAK(197);
+		wakeDwarves();
+		return;
+	}
+	sayActionDefault();
 }
 
 /**
@@ -1983,13 +2133,19 @@ function actionBreak() {
  * 9290
  */
 function actionWake() {
+	if (OBJ == 0) {
+		sayWhat();
+		return;
+	}
 	if (OBJ ==  DWARF || CLOSED) {
 		RSPEAK(199); 
 		/* You prod the nearest dwarf, who wakes up grumpily, takes one look at
 		   you, curses, and grabs for his axe. */         
 		// OH DEAR, HE'S DISTURBED THE DWARVES.
 		wakeDwarves();
+		return;
 	}
+	sayActionDefault();
 }
 
 function actionSuspend() {
@@ -2179,8 +2335,11 @@ function enterStorage() {
 //C  CONTINUE.  12200 IS FOR OTHER CASES OF LAMP DYING.  12400 IS WHEN IT GOES
 //C  OUT, AND 12600 IS IF HE'S WANDERED OUTSIDE AND THE LAMP IS USED UP, IN WHICH
 //C  CASE WE FORCE HIM TO GIVE UP.
-
-
+/**
+ * checkLamp
+ * 2608+
+ * 12000-12200-12400-12600
+ */
 function checkLamp() {
 	if (PROP[LAMP] == 1) LIMIT--;
 	
