@@ -263,7 +263,7 @@ function processCommand(text){
 			case 2: // action
 				//goto 4000
 				//VERB = command % 1000;
-				processAction(command);
+				if (processAction(command)) RSPEAK(ACTSPK[VERB]); 
 				break;
 			case 3: // special
 				//goto 2010
@@ -272,7 +272,6 @@ function processCommand(text){
 				break;
 			default: throw 'VOCABULARY TYPE (N/1000) NOT BETWEEN 0 AND 3';
 		}
-		
 	}
 	
 	//processInput();
@@ -280,6 +279,333 @@ function processCommand(text){
 	updateStatusBar(SCORE, TURNS);
 }
 
+// FIGURE OUT THE NEW LOCATION
+//
+// GIVEN THE CURRENT LOCATION IN "LOC", AND A MOTION VERB NUMBER IN "K", PUT
+// THE NEW LOCATION IN "NEWLOC".  THE CURRENT LOC IS SAVED IN "OLDLOC" IN CASE
+// HE WANTS TO RETREAT.  THE CURRENT OLDLOC IS SAVED IN OLDLC2, IN CASE HE
+// DIES.  (IF HE DOES, NEWLOC WILL BE LIMBO, AND OLDLOC WILL BE WHAT KILLED
+// HIM, SO WE NEED OLDLC2, WHICH IS THE LAST PLACE HE WAS SAFE.)
+/**
+ * 
+ * @param motion
+ * 8
+ */
+function processMove(motion) {
+	var	K, KK = KEY[LOC];
+	NEWLOC = LOC;
+	if (KK == 0) throw 'LOCATION HAS NO TRAVEL ENTRIES'; // BUG(26)
+	
+	if (WD1 == 'WEST') {
+		IWEST++;
+		if (IWEST == 10) RSPEAK(17); /* If you prefer, simply type w rather than west. */
+	}
+	if (WD1 == 'ENTER' && (WD2 == 'STREA' || WD2 == 'WATER')) {
+		if (LIQLOC(LOC) == WATER) RSPEAK(70); /* Your feet are now wet. */
+		else RSPEAK(43); /* Where? */
+		return;
+	}
+	if ((WD1 == 'WATER' || WD1 == 'OIL') && (WD2 == 'PLANT' || WD2 == 'DOOR')) {
+		if (AT[VOCAB(WD2, 1)]) WD2 = 'POUR';
+	}
+	//	if (WD1 == 'ENTER' && WD2 !=  0) GOTO 2800
+
+	switch (motion) {
+//	if (K == NULL) GOTO 2
+		case BACK: // 20
+			goBack(); break;
+		case LOOK: // 30
+			look(); break;
+		case CAVE: // 40
+			cave(); break;
+		default: break;
+	}
+	
+	OLDLC2 = OLDLOC;
+	OLDLOC = LOC;
+	
+	var LL;
+	while (LL = Math.abs(TRAVEL[KK]), LL % 1000 != 1 && LL % 1000 != motion) {
+		if (TRAVEL[KK] < 0) { RSPEAK(wrongMove(motion)); return; } // GOTO 50
+		KK++;
+	}
+	LL = (LL / 1000)>>0;
+	NEWLOC = LL;
+	
+	K = NEWLOC % 100; 
+//	if (NEWLOC <=  300) GOTO 13
+//	if (PROP[K] ! =  NEWLOC/100-3) GOTO 16
+//12	if (TRAVEL[KK] < 0) CALL BUG(25) 
+//	KK = KK+1
+//	NEWLOC = Math.abs(TRAVEL[KK]) /1000
+//	if (NEWLOC == LL) GOTO 12
+//	LL = NEWLOC
+//	GOTO 11
+//
+//13	if (NEWLOC <=  100) GOTO 14
+//	if (TOTING(K)  || (NEWLOC > 200 && AT(K) ) ) GOTO 16
+//	GOTO 12
+//
+//14	if (NEWLOC ! =  0 &&  !PCT(NEWLOC) ) GOTO 12
+//16	NEWLOC = LL % 1000;
+//	if (NEWLOC <=  300) GOTO 2
+//	if (NEWLOC <=  500) GOTO 30000
+//	CALL RSPEAK(NEWLOC-500) 
+//	NEWLOC = LOC
+//	GOTO 2
+//
+//C  SPECIAL MOTIONS COME HERE.  LABELLING CONVENTION: STATEMENT NUMBERS NNNXX
+//C  (XX = 00-99)  ARE USED FOR SPECIAL CASE NUMBER NNN (NNN = 301-500) .
+//
+//30000	NEWLOC = NEWLOC-300
+//	GOTO (30100,30200,30300) NEWLOC
+//	CALL BUG(20) 
+//
+//C  TRAVEL 301.  PLOVER-ALCOVE PASSAGE.  CAN CARRY ONLY EMERALD.  NOTE: TRAVEL
+//C  TABLE MUST INCLUDE "USELESS" ENTRIES GOING THROUGH PASSAGE, WHICH CAN NEVER
+//C  BE USED FOR ACTUAL MOTION, BUT CAN BE SPOTTED BY "GO BACK".
+//
+//30100	NEWLOC = 99+100-LOC
+//	if (HOLDNG == 0 || (HOLDNG == 1 && TOTING(EMRALD) ) ) GOTO 2
+//	NEWLOC = LOC
+//	CALL RSPEAK(117) 
+//	GOTO 2
+//
+//C  TRAVEL 302.  PLOVER TRANSPORT.  DROP THE EMERALD (ONLY USE SPECIAL TRAVEL IF
+//C  TOTING IT) , SO HE'S FORCED TO USE THE PLOVER-PASSAGE TO GET IT OUT.  HAVING
+//C  DROPPED IT, GO BACK AND PRETEND HE WASN'T CARRYING IT AFTER ALL.
+//
+//30200	CALL DROP(EMRALD,LOC) 
+//	GOTO 12
+//
+//C  TRAVEL 303.  TROLL BRIDGE.  MUST BE DONE ONLY AS SPECIAL MOTION SO THAT
+//C  DWARVES WON'T WANDER ACROSS AND ENCOUNTER THE BEAR.  (THEY WON'T FOLLOW THE
+//C  PLAYER THERE BECAUSE THAT REGION IS FORBIDDEN TO THE PIRATE.)   IF
+//C  PROP[TROLL] = 1, HE'S CROSSED SINCE PAYING, SO STEP OUT AND BLOCK HIM.
+//C  (STANDARD TRAVEL ENTRIES CHECK FOR PROP[TROLL] = 0.)   SPECIAL STUFF FOR BEAR.
+//
+//30300	if (PROP[TROLL] ! =  1) GOTO 30310
+//	CALL PSPEAK(TROLL,1) 
+//	PROP[TROLL] = 0
+//	CALL MOVE(TROLL2,0) 
+//	CALL MOVE(TROLL2+100,0) 
+//	CALL MOVE(TROLL,PLAC[TROLL]) 
+//	CALL MOVE(TROLL+100,FIXD[TROLL]) 
+//	CALL JUGGLE(CHASM) 
+//	NEWLOC = LOC
+//	GOTO 2
+//
+//30310	NEWLOC = PLAC[TROLL]+FIXD[TROLL]-LOC
+//	if (PROP[TROLL] == 0) PROP[TROLL] = 1
+//	if ( !TOTING(BEAR) ) GOTO 2
+//	CALL RSPEAK(162) 
+//	PROP[CHASM] = 1
+//	PROP[TROLL] = 2
+//	CALL DROP(BEAR,NEWLOC) 
+//	FIXED[BEAR] = -1
+//	PROP[BEAR] = 3
+//	if (PROP[SPICES] < 0) TALLY2 = TALLY2+1
+//	OLDLC2 = NEWLOC
+//	GOTO 99
+//
+//C  END OF SPECIALS.
+	
+	
+//C  HANDLE "GO BACK".  LOOK FOR VERB WHICH GOES FROM LOC TO OLDLOC, OR TO OLDLC2
+//C  IF OLDLOC HAS FORCED-MOTION.  K2 SAVES ENTRY -> FORCED LOC -> PREVIOUS LOC.
+//
+/**
+ * HANDLE "GO BACK"
+ * 20
+ */
+function goBack() {
+	
+}
+//20	K = OLDLOC
+//	if (FORCED(K) ) K = OLDLC2
+//	OLDLC2 = OLDLOC
+//	OLDLOC = LOC
+//	K2 = 0
+//	if (K ! =  LOC) GOTO 21
+//	CALL RSPEAK(91) 
+//	GOTO 2
+//
+//21	LL = (Math.abs(TRAVEL[KK]) /1000) % 1000;
+//	if (LL == K) GOTO 25
+//	if (LL > 300) GOTO 22
+//	J = KEY[LL]
+//	if (FORCED(LL)  && (Math.abs(TRAVEL[J]) /1000) % 1000  == K) K2 = KK
+//22	if (TRAVEL[KK] < 0) GOTO 23
+//	KK = KK+1
+//	GOTO 21
+//
+//23	KK = K2
+//	if (KK ! =  0) GOTO 25
+//	CALL RSPEAK(140) 
+//	GOTO 2
+//
+//25	K = Math.abs(TRAVEL[KK]) % 1000; 
+//	KK = KEY[LOC]
+//	GOTO 9
+//
+//C  LOOK.  CAN'T GIVE MORE DETAIL.  PRETEND IT WASN'T DARK (THOUGH IT MAY "NOW"
+//C  BE DARK)  SO HE WON'T FALL INTO A PIT WHILE STARING INTO THE GLOOM.
+//
+/**
+ * LOOK.  CAN'T GIVE MORE DETAIL.
+ * 30
+ */
+function look() {
+	if (DETAIL < 3) RSPEAK(15);
+	/* Sorry, but I am not allowed to give more detail.  I will repeat the long description of your location.*/
+	DETAIL++;
+	WZDARK = false;
+	ABB[LOC] = 0;
+	return;
+}
+//30	if (DETAIL < 3) CALL RSPEAK(15) 
+//	DETAIL = DETAIL+1
+//	WZDARK =  false
+//	ABB[LOC] = 0
+//	GOTO 2
+//
+//C  CAVE.  DIFFERENT MESSAGES DEPENDING ON WHETHER ABOVE GROUND.
+//
+/**
+ * CAVE.  DIFFERENT MESSAGES DEPENDING ON WHETHER ABOVE GROUND.
+ * 40
+ */
+function cave() {
+	if (LOC < 8) RSPEAK(57); 
+	/* I don't know where the cave is, but hereabouts no stream can run on the surface for long.  I would try the stream. */  
+	else RSPEAK(58);
+	/* I need more detailed instructions to do that. */
+	return;
+}
+	
+//40	if (LOC < 8) CALL RSPEAK(57) 
+//	if (LOC >=  8) CALL RSPEAK(58) 
+//	GOTO 2
+//
+//C  NON-APPLICABLE MOTION.  VARIOUS MESSAGES DEPENDING ON WORD GIVEN.
+//
+//50	SPK = 12
+//	if (K >=  43 && K <=  50) SPK = 9
+//	if (K == 29 || K == 30) SPK = 9
+//	if (K == 7 || K == 36 || K == 37) SPK = 10
+//	if (K == 11 || K == 19) SPK = 11
+//	if (VERB == FIND || VERB == INVENT) SPK = 59
+//	if (K == 62 || K == 65) SPK = 42
+//	if (K == 17) SPK = 80
+//	CALL RSPEAK(SPK) 
+//	GOTO 2
+}
+
+/**
+ * NON-APPLICABLE MOTION.  VARIOUS MESSAGES DEPENDING ON WORD GIVEN.
+ * @param motion
+ * 50
+ */
+function wrongMove(motion) {
+	if (motion >= 43 && motion <= 50) return 9; /* There is no way to go that direction.*/
+	if (motion == 29 || motion == 30) return 9; /* There is no way to go that direction.*/
+	if (motion == 7 || motion == 36 || motion == 37) return 10; /* I am unsure how you are facing.  Use compass points or nearby objects. */
+	if (motion == 11 || motion == 19) return 11; /* I don't know in from out here.  Use compass points or name something in the general direction you want to go. */
+	if (VERB == FIND || VERB == INVENT) return 59; /* I can only tell you what you see as you move about and manipulate things.  I cannot tell you where remote things are. */
+	if (motion == 62 || motion == 65) return 42; /* Nothing happens.*/
+	if (motion == 17) return 80; /* Which way? */
+	return 12; /* I don't know how to apply that word here.*/
+}
+
+// ANALYSE A VERB.  REMEMBER WHAT IT WAS, GO BACK FOR OBJECT IF SECOND WORD
+// UNLESS VERB IS "SAY", WHICH SNARFS ARBITRARY SECOND WORD.
+/**
+ * 
+ * @param verb
+ * 4000
+ */
+function processAction(verb) {
+	VERB = verb;
+	//if (WD2 != 0 && VERB != SAY)GOTO 2800
+	//IF(VERB.EQ.SAY)OBJ=WD2
+	//IF(OBJ.NE.0)GOTO 4090
+	switch (verb) {
+	case 1: // TAKE	
+		action = actionTake; break;
+	case 2: // DROP	
+		action = actionDiscard; break;
+	case 3: // SAY	
+		action = actionSay; break;
+	case 4: // OPEN	
+		action = actionLockUnlock; break;
+	case 5: // NOTH	
+		action = noAction; break;
+	case 6: // LOCK	
+		action = actionLockUnlock; break;
+	case 7: // ON	
+		action = actionLightOn; break;
+	case 8: // OFF	
+		action = actionLightOff; break;
+	case 9: // WAVE	
+		action = actionWave; break;
+	case 10: // CALM	
+		action = noAction; break;
+	case 11: // WALK	
+		action = noAction; break;
+	case 12: // KILL	
+		action = actionAttack; break;
+	case 13: // POUR	
+		action = actionPour; break;
+	case 14: // EAT	
+		action = actionEat; break;
+	case 15: // DRNK	
+		action = actionDrink; break;
+	case 16: // RUB	
+		action = actionRub; break;
+	case 17: // TOSS	
+		action = actionThrow; break;
+	case 18: // QUIT	
+		action = actionQuit; break;
+	case 19: // FIND	
+		action = actionFind; break;
+	case 20: // INVN	
+		action = noAction; break;
+	case 21: // FEED	
+		action = actionFeed; break;
+	case 22: // FILL	
+		action = actionFill; break;
+	case 23: // BLST	
+		action = actionBlast; break;
+	case 24: // SCOR	
+		action = actionScore; break;
+	case 25: // FOO	
+		action = actionFoo; break;
+	case 26: // BRF	
+		action = actionBrief; break;
+	case 27: // READ	
+		action = actionRead; break;
+	case 28: // BREK	
+		action = actionBreak; break;
+	case 29: // WAKE	
+		action = actionWake; break;
+	case 30: // SUSP	
+		action = actionSuspend; break;
+	case 31: // HOUR	
+		action = actionHours; break;
+	}
+	return action();
+}
+
+// ANALYSE AN OBJECT WORD.  SEE IF THE THING IS HERE, WHETHER WE'VE GOT A VERB
+// YET, AND SO ON.  OBJECT MUST BE HERE UNLESS VERB IS "FIND" OR "INVENT(ORY)"
+// (AND NO NEW VERB YET TO BE ANALYSED).  WATER AND OIL ARE ALSO FUNNY, SINCE
+// THEY ARE NEVER ACTUALLY DROPPED AT ANY LOCATION, BUT MIGHT BE HERE INSIDE
+// THE BOTTLE OR AS A FEATURE OF THE LOCATION.
+/**
+ * 
+ * @param object
+ * 5000/5100
+ */
 function processObject(object) { /* needs to be checked on correct processing */
 	var canSee = false;
 	OBJ = object;
@@ -325,14 +651,27 @@ function processObject(object) { /* needs to be checked on correct processing */
 
 }
 
+/**
+ * 
+ * @param object
+ */
 function sayISeeNo(object) {
 	out('I see no ' + object + ' here.');
 }
 
+/**
+ * 
+ * @param object
+ */
 function sayWhatToDo(object) {
 	out('What do you want to do with the ' + object + '?');
 }
 
+/**
+ * 
+ * @param text
+ * @returns
+ */
 function parseInput(text) {
 	var words = new Array();
 	words = text.match(/\S+/g);
@@ -1034,30 +1373,8 @@ function checkHints() {
 //	if (CLOCK2 == 0) GOTO 11000
 		
 	checkLamp();	
-//	if (PROP[LAMP] == 1) LIMIT = LIMIT-1
-//	if (LIMIT <=  30 && HERE(BATTER)  && PROP[BATTER] == 0
-//	1	 && HERE(LAMP) ) GOTO 12000
-//	if (LIMIT == 0) GOTO 12400
-//	if (LIMIT < 0 && LOC <=  8) GOTO 12600
-//	if (LIMIT <=  30) GOTO 12200
 	
-//19999	K = 43
-//	if (LIQLOC(LOC)  == WATER) K = 70
-//	if (WD1 == 'ENTER' && (WD2 == 'STREA' || WD2 == 'WATER') ) 
-//	1	GOTO 2010
-//	if (WD1 == 'ENTER' && WD2 ! =  0) GOTO 2800
-//	if ((WD1 ! =  'WATER' && WD1 ! =  'OIL') 
-//	1	 || (WD2 ! =  'PLANT' && WD2 ! =  'DOOR') ) GOTO 2610
-//	if (AT(VOCAB(WD2,1) ) ) WD2 = 'POUR'
-//2610	if (WD1 ! =  'WEST') GOTO 2630
-//	IWEST = IWEST+1
-//	if (IWEST == 10) CALL RSPEAK(17) 
-//2630	I = VOCAB(WD1,-1) 
-//	if (I == -1) GOTO 3000
-//	K = I % 1000; 
-//	KQ = I/1000+1
-//	GOTO (8,5000,4000,2010) KQ
-//	CALL BUG(22) 
+
 //
 //C  GET SECOND WORD FOR ANALYSIS.
 //
@@ -1169,9 +1486,9 @@ function checkHints() {
 //	if (LOC > 9 && LOC < 15) K = ENTRNC
 //	if (K ! =  GRATE) GOTO 8
 //5110	if (K ! =  DWARF) GOTO 5120
-	for (var I = 1; I <= 5; I++) {
-		if (DLOC[I] == LOC && DFLAG >=  2) {}//GOTO 5010;
-	}
+//	for (var I = 1; I <= 5; I++) {
+//		if (DLOC[I] == LOC && DFLAG >=  2) {}//GOTO 5010;
+//	}
 //5120	if ((LIQ(0)  == K && HERE(BOTTLE) )  || K == LIQLOC(LOC) ) GOTO 5010
 //	if (OBJ ! =  PLANT ||  !AT(PLANT2)  || PROP[PLANT2] == 0) GOTO 5130
 //	OBJ = PLANT2
@@ -1412,10 +1729,7 @@ function sayWhat() {
 	// return to 'check hints' (2600)
 }
 
-function sayActionDefault() {
-	RSPEAK(ACTSPK[VERB]); 
-}
-	
+
 function actionTake() {
 	var spk = ACTSPK[VERB];
 	//C  CARRY, NO OBJECT GIVEN YET.  OK IF ONLY ONE OBJECT PRESENT.
@@ -1817,11 +2131,21 @@ function actionDrink() {
 //	GOTO 2011
 }
 
+/**
+ * RUB.  YIELDS VARIOUS SNIDE REMARKS.
+ * 9160
+ */
 function actionRub() {
-//C  RUB.  YIELDS VARIOUS SNIDE REMARKS.
-//
-//9160	if (OBJ ! =  LAMP) SPK = 76
-//	GOTO 2011
+	if (OBJ == 0) {
+		sayWhat();
+		return false;
+	}
+	else if (OBJ !=  LAMP) {
+		RSPEAK(76); /* Peculiar. Nothing unexpected happens. */
+		return false;
+	}
+	else
+		return true;
 }
 
 function actionThrow() {
@@ -2016,7 +2340,8 @@ function actionScore() {
  * WORD ZIPS THE EGGS BACK TO THE GIANT ROOM (UNLESS ALREADY THERE) .
  * 8250
  */
-function actionFoo(fum) {
+function actionFoo() {
+	var fum = VOCAB(WD1, 3);
 	if (fum != FOOBAR + 1) {
 		if (FOOBAR != 0) RSPEAK(151); /* What's the matter, can't you read? Now you'd best start over.*/
 	}
@@ -2037,7 +2362,7 @@ function actionFoo(fum) {
 			}
 		}
 		else {
-			RSPEAK(54) /* OK */
+			RSPEAK(54); /* OK */
 		}
 	}
 }
@@ -2047,13 +2372,14 @@ function actionFoo(fum) {
  * 8260
  */
 function actionBrief() {
-	if (OBJ != 0) sayActionDefault();
+	if (OBJ != 0) return true;
 	else {
 		ABBNUM = 10000;
 		DETAIL = 3;
 		RSPEAK(156);
 		/* Okay, from now on I'll only describe a place in full the first time
 		   you come to it.  To get the full description, say "look".*/
+		return false;
 	}
 }
 
@@ -2093,10 +2419,11 @@ function actionRead() {
 					}
 					break;
 				default:
-					sayActionDefault();
+					return true;
 			}
 		}
 	}
+	return false;
 }
 
 /**
@@ -2106,26 +2433,26 @@ function actionRead() {
 function actionBreak() {
 	if (OBJ == 0) {
 		sayWhat();
-		return;
+		return false;
 	}
 	if (OBJ == MIRROR) {
 		RSPEAK(148); /* It is too far up for you to reach.*/
-		return;
+		return false;
 	}
 	if (OBJ == VASE && PROP[VASE] == 0) {
 		if (TOTING(VASE)) DROP(VASE, LOC);
 		PROP[VASE] = 2;
 		FIXED[VASE] = -1;
 		RSPEAK(198); /* You have taken the vase and hurled it delicately to the ground.*/
-		return;
+		return false;
 		//	GOTO 2011
 	}
 	if (OBJ ==  MIRROR && CLOSED) {
 		RSPEAK(197);
 		wakeDwarves();
-		return;
+		return false;
 	}
-	sayActionDefault();
+	return true;
 }
 
 /**
@@ -2135,7 +2462,7 @@ function actionBreak() {
 function actionWake() {
 	if (OBJ == 0) {
 		sayWhat();
-		return;
+		return false;
 	}
 	if (OBJ ==  DWARF || CLOSED) {
 		RSPEAK(199); 
@@ -2143,9 +2470,9 @@ function actionWake() {
 		   you, curses, and grabs for his axe. */         
 		// OH DEAR, HE'S DISTURBED THE DWARVES.
 		wakeDwarves();
-		return;
+		return false;
 	}
-	sayActionDefault();
+	return true;
 }
 
 function actionSuspend() {
