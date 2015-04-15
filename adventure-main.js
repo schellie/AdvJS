@@ -312,7 +312,7 @@ function getCommand() {
 	
 	VERB = (WD1 == 0) ? -1 : VOCAB(WD1,-1);
 	gCommand = VERB % 1000;
-	gCommType = (VERB / 1000)>>0 // make integer
+	gCommType = (VERB / 1000)>>0; // make integer
 	OBJ = (WD2 == 0) ? -1 : VOCAB(WD2,-1);
 
 	//Give focus to commandLine if not a touch device.
@@ -433,7 +433,7 @@ function processMove() {
 	
 	OLDLC2 = OLDLOC;
 	OLDLOC = LOC;
-	
+// 9	
     var trav, tIndex = KEY[LOC];
 	do {
 		// step thru travel array
@@ -445,34 +445,48 @@ function processMove() {
     	RSPEAK(wrongMove(K)); return; // 50
     }
 	
-	var LL;
 	// LL % 1000 == 1 last entry of travel array
-	// trav is now corrrect move
-
-	
+	// trav is now corrrect move (=LL)
 // 10
-	LL = (LL / 1000)>>0;
+	var LL = (trav / 1000)>>0;
 // 11
-	NEWLOC = LL;
+	NEWLOC = (LL / 1000)>>0;
 	K = NEWLOC % 100;
-while(1) {	
-	nn = LL = NEWLOC
-	mm = K
+	
+//	newloc	11	13	14
+//  ====================================
+//	0		13	14	16
+//	<=100	13	14	PCT(NEWLOC)->16
+//					!PCT(NEWLOC)->12	
+//	<=200	13	TOTING(K)->16
+//				!TOTING(K)->12
+//	<=300	13	TOTING(K) || AT(K)->16
+//				!TOTING(K) && !AT(K)->12
+//	<=400	PROP[K] != NEWLOC/100-3->16
+//			PROP[K] == NEWLOC/100-3->12
+//  <=500
+	
+	// 12 	do{
+	//		TRAVEL[tIndex] < 0 -> 25 CONDITIONAL TRAVEL ENTRY WITH NO ALTERNATIVE
+	//		tIndex++;
+	//		trav = Math.abs(TRAVEL[tIndex])
+	//		NEWLOC = (trav/1000)>>0
+	//		}while(NEWLOC == LL)
+	//		LL = NEWLOC
+	//		NEWLOC = (LL / 1000)>>0;
+	//		K = NEWLOC % 100;
+	//		recheck
+	
+	// find next possibility
+	do {
+		// step thru travel array
+    	trav = Math.abs(TRAVEL[tIndex]);
+        out('**trav:' + trav + ' (' + (tIndex) + ')');
+    } while ((trav % 1000) != K && TRAVEL[tIndex++] > 0);
+	
+	
+	
 
-	NEWLOC == 0 // 16
-	NEWLOC <= 100, PCT(NEWLOC) // 16
-	NEWLOC <= 200, TOTING(K) // 16
-	NEWLOC <= 300, TOTING(K) || AT(K) // 16
-	NEWLOC <= 400, PROP[K] != NEWLOC/100-3 // 16
-	
-	if (TRAVEL[KK] < 0) CALL BUG(25) 
-	KK = KK+1;
-	NEWLOC = (Math.abs(TRAVEL[KK])/1000)>>0
-	if (NEWLOC == LL) GOTO 12
-	LL = NEWLOC;
-}	
-	
-	
 	if (NEWLOC <= 300) GOTO 13
 	if (PROP[K] !=  NEWLOC/100-3) GOTO 16
 // 12
@@ -498,6 +512,26 @@ while(1) {
 	RSPEAK(NEWLOC-500);
 	NEWLOC = LOC;
 	return;
+
+while(1) {	
+	nn = LL = NEWLOC
+	mm = K
+
+	NEWLOC == 0 // 16
+	NEWLOC <= 100, PCT(NEWLOC) // 16
+	NEWLOC <= 200, TOTING(K) // 16
+	NEWLOC <= 300, TOTING(K) || AT(K) // 16
+	NEWLOC <= 400, PROP[K] != NEWLOC/100-3 // 16
+	
+//	if (TRAVEL[KK] < 0) CALL BUG(25) 
+//	KK = KK+1;
+//	NEWLOC = (Math.abs(TRAVEL[KK])/1000)>>0
+//	if (NEWLOC == LL) GOTO 12
+//	LL = NEWLOC;
+}	
+	
+	
+
 	  
 	  
 //
