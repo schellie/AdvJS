@@ -149,8 +149,10 @@ var isTouch = (('ontouchstart' in window) || (navigator.msMaxTouchPoints > 0)); 
 var displayText; // area to output messages
 var commandLine; // area to input commands
 // globals holding 1st 2 words of input
-var word1 = '';
-var word2 = '';
+var gWord1 = '';
+var gWord2 = '';
+var gCommand = -1; // given command (1st word) mod 1000
+var gCommType = 0; // type of command (0-3) - int div of 1st word and 1000
 var WD1; // 1st 5 chars of word1 in uppercase
 var WD2; // 1st 5 chars of word2 in uppercase
 var VERB; // 'translated' word1
@@ -158,50 +160,6 @@ var OBJ;  // 'translated' word2
 
 
 
-// STATEMENT FUNCTIONS
-
-// TRUE IF THE OBJ IS BEING CARRIED
-function TOTING(obj) { return PLACE[obj] == -1; }
-// TRUE IF THE OBJ IS AT "LOC" (OR IS BEING CARRIED)
-function HERE(obj) { return PLACE[obj] == LOC || TOTING(obj); }
-// TRUE IF ON EITHER SIDE OF TWO-PLACED OBJECT
-function AT(obj) { return PLACE[obj] == LOC || FIXED[obj] == LOC; }
-
-function LIQ2(pbotl) { /** test ok **/
-	return (1-pbotl)*WATER + (pbotl/2>>0)*(WATER+OIL);
-}
-
-// OBJECT NUMBER OF LIQUID IN BOTTLE
-function LIQ() { /** test ok **/
-	return LIQ2(Math.max(PROP[BOTTLE], -1-PROP[BOTTLE]));
-}
-
-// OBJECT NUMBER OF LIQUID (IF ANY) AT LOC
-function LIQLOC(loc) { /** test ok **/
-	var c1 = (COND[loc]/2>>0)*2,
-		c2 = (COND[loc]/4>>0);
-	return LIQ2(((c1%8)-5) * (c2%2) + 1);
-}
-
-// TRUE IF COND(L) HAS BIT N SET (BIT 0 IS UNITS BIT)
-function BITSET(l, n) {
-	return ((COND[l] & 1<<n) != 0);
-}
-
-// TRUE IF LOC MOVES WITHOUT ASKING FOR INPUT (COND=2)
-function FORCED(loc) { /** test ok **/
-	return (COND[loc] == 2);
-}
-
-// TRUE IF LOCATION "LOC" IS DARK
-function DARK() { /** test ok **/
-	return ((COND[LOC] % 2) == 0) && ((PROP[LAMP] == 0) || !HERE(LAMP));
-}
-
-// TRUE N% OF THE TIME (N INTEGER FROM 0 TO 100)
-function PCT(n) { /** test ok **/
-	return (RAN(100) < n);
-}
 
 function startup() {
 	// initialize variables for I/O
@@ -335,24 +293,40 @@ function updateStatusBar(score, moves) { /** test ok **/
 	document.getElementById('statusMoves').innerHTML = moves;
 }
 
-//Give focus to commandLine if not a touch device. 
-function giveCommandFocus() { /** test ok **/
-	if (!isTouch) commandLine.focus();
-}
-
-//Get command.
-function getCommand() { /** test ok **/
+/**
+ * getCommand - process the input from the user and store the commands
+ * @returns true if a know command was given
+ */
+function getCommand() {
 	var text = commandLine.value;
+	var words = text.match(/\S+/g) || [];
+	
 	commandLine.value = '';
 	out('\n' + '> ' + text);
-	processCommand(text);
-	giveCommandFocus();
+	
+    word1 = (words.length > 0) ? words[0] : '';
+    word2 = (words.length > 1) ? words[1] : '';
+
+	WD1 = (word1 == '') ? 0 : word1.substr(0,5).toUpperCase();
+	WD2 = (word2 == '') ? 0 : word2.substr(0,5).toUpperCase();
+	
+	VERB = (WD1 == 0) ? -1 : VOCAB(WD1,-1);
+	gCommand = VERB % 1000;
+	gCommType = (VERB / 1000)>>0 // make integer
+	OBJ = (WD2 == 0) ? -1 : VOCAB(WD2,-1);
+
+	//Give focus to commandLine if not a touch device.
+	if (!isTouch) commandLine.focus();
+	
+	return (VERB != -1);
 }
 
-function processCommand(text){
-	var command = parseInput(text);
+/**
+ * processCommand - main routine, users input is validated and acted upon
+ */
+function processCommand() {
 	
-	if (command == -1) {
+	if (!getCommand()) {
 		if (PCT(20)) RSPEAK(61);  /* What? */
 		else if (PCT(20)) RSPEAK(13);  /* I don't understand that! */
 		else RSPEAK(60);  /* I don't know that word. */
@@ -360,25 +334,23 @@ function processCommand(text){
 		//GOTO 2600
 	}
 	else {
-		commandType = (command / 1000)>>0;
-		command %= 1000;
-		switch (commandType) {
+		switch (gCommType) {
 			case 0: // motion
 				//goto 8
-				processMove(command);
+				processMove();
 				break;
 			case 1: // object
-				processObject(command);
+				processObject();
 				break;
 			case 2: // action
 				//goto 4000
 				//VERB = command % 1000;
-				if (processAction(command)) RSPEAK(ACTSPK[VERB]); 
+				if (processAction()) RSPEAK(ACTSPK[VERB]); 
 				break;
 			case 3: // special
 				//goto 2010
-				if (command >= 1 && command <= 5) actionFoo(command);
-				else RSPEAK(command);
+				if (gCommand >= 1 && gCommand <= 5) actionFoo();
+				else RSPEAK(gCommand);
 				break;
 			default: throw 'VOCABULARY TYPE (N/1000) NOT BETWEEN 0 AND 3';
 		}
@@ -401,68 +373,133 @@ function processCommand(text){
  * @param motion
  * 8
  */
-function processMove(motion) {
-	var	K, KK = KEY[LOC];
+function processMove() {
+	var	K = gCommand, KK = KEY[LOC];	
 	NEWLOC = LOC;
 	if (KK == 0) throw 'LOCATION HAS NO TRAVEL ENTRIES'; // BUG(26)
 	
-	if (WD1 == 'WEST') {
-		IWEST++;
-		if (IWEST == 10) RSPEAK(17); /* If you prefer, simply type w rather than west. */
-	}
-	if (WD1 == 'ENTER' && (WD2 == 'STREA' || WD2 == 'WATER')) {
-		if (LIQLOC(LOC) == WATER) RSPEAK(70); /* Your feet are now wet. */
-		else RSPEAK(43); /* Where? */
-		return;
-	}
-	if ((WD1 == 'WATER' || WD1 == 'OIL') && (WD2 == 'PLANT' || WD2 == 'DOOR')) {
-		if (AT[VOCAB(WD2, 1)]) WD2 = 'POUR';
-	}
-	//	if (WD1 == 'ENTER' && WD2 !=  0) GOTO 2800
+	
+//	if (WD1 == 'WEST') {
+//		IWEST++;
+//		if (IWEST == 10) RSPEAK(17); /* If you prefer, simply type w rather than west. */
+//	}
+//	if (WD1 == 'ENTER' && (WD2 == 'STREA' || WD2 == 'WATER')) {
+//		if (LIQLOC(LOC) == WATER) RSPEAK(70); /* Your feet are now wet. */
+//		else RSPEAK(43); /* Where? */
+//		return;
+//	}
+//	if ((WD1 == 'WATER' || WD1 == 'OIL') && (WD2 == 'PLANT' || WD2 == 'DOOR')) {
+//		if (AT[VOCAB(WD2, 1)]) WD2 = 'POUR';
+//	}
+//	//	if (WD1 == 'ENTER' && WD2 !=  0) GOTO 2800
 
-	switch (motion) {
-//	if (K == NULL) GOTO 2
-		case BACK: // 20
-			goBack(); break;
-		case LOOK: // 30
-			look(); break;
-		case CAVE: // 40
-			cave(); break;
-		default: break;
-	}
+	if (K == NULL) return;
+	if (K == BACK) goBack(); return; // 20
+	if (K == LOOK) look(); return; // 30
+	if (K == CAVE) cave(); return; // 40
+
+	
+//	C  SECTION 3: TRAVEL TABLE.  EACH LINE CONTAINS A LOCATION NUMBER (X), A SECOND
+//	C	LOCATION NUMBER (Y), AND A LIST OF MOTION NUMBERS (SEE SECTION 4).
+//	C	EACH MOTION REPRESENTS A VERB WHICH WILL GO TO Y IF CURRENTLY AT X.
+//	C	Y, IN TURN, IS INTERPRETED AS FOLLOWS.  LET M=Y/1000, N=Y MOD 1000.
+//	C		IF N<=300	IT IS THE LOCATION TO GO TO.
+//	C		IF 300<N<=500	N-300 IS USED IN A COMPUTED GOTO TO
+//	C					A SECTION OF SPECIAL CODE.
+//	C		IF N>500	MESSAGE N-500 FROM SECTION 6 IS PRINTED,
+//	C					AND HE STAYS WHEREVER HE IS.
+//	C	MEANWHILE, M SPECIFIES THE CONDITIONS ON THE MOTION.
+//	C		IF M=0		IT'S UNCONDITIONAL.
+//	C		IF 0<M<100	IT IS DONE WITH M% PROBABILITY.
+//	C		IF M=100	UNCONDITIONAL, BUT FORBIDDEN TO DWARVES.
+//	C		IF 100<M<=200	HE MUST BE CARRYING OBJECT M-100.
+//	C		IF 200<M<=300	MUST BE CARRYING OR IN SAME ROOM AS M-200.
+//	C		IF 300<M<=400	PROP(M MOD 100) MUST *NOT* BE 0.
+//	C		IF 400<M<=500	PROP(M MOD 100) MUST *NOT* BE 1.
+//	C		IF 500<M<=600	PROP(M MOD 100) MUST *NOT* BE 2, ETC.
+//	C	IF THE CONDITION (IF ANY) IS NOT MET, THEN THE NEXT *DIFFERENT*
+//	C	"DESTINATION" VALUE IS USED (UNLESS IT FAILS TO MEET *ITS* CONDITIONS,
+//	C	IN WHICH CASE THE NEXT IS FOUND, ETC.).  TYPICALLY, THE NEXT DEST WILL
+//	C	BE FOR ONE OF THE SAME VERBS, SO THAT ITS ONLY USE IS AS THE ALTERNATE
+//	C	DESTINATION FOR THOSE VERBS.  FOR INSTANCE:
+//	C		15	110022	29	31	34	35	23	43
+//	C		15	14	29
+//	C	THIS SAYS THAT, FROM LOC 15, ANY OF THE VERBS 29, 31, ETC., WILL TAKE
+//	C	HIM TO 22 IF HE'S CARRYING OBJECT 10, AND OTHERWISE WILL GO TO 14.
+//	C		11	303008	49
+//	C		11	9	50
+//	C	THIS SAYS THAT, FROM 11, 49 TAKES HIM TO 8 UNLESS PROP(3)=0, IN WHICH
+//	C	CASE HE GOES TO 9.  VERB 50 TAKES HIM TO 9 REGARDLESS OF PROP(3).
 	
 	OLDLC2 = OLDLOC;
 	OLDLOC = LOC;
 	
-	var LL;
-	while (LL = Math.abs(TRAVEL[KK]), LL % 1000 != 1 && LL % 1000 != motion) {
-		if (TRAVEL[KK] < 0) { RSPEAK(wrongMove(motion)); return; } // GOTO 50
-		KK++;
-	}
-	LL = (LL / 1000)>>0;
-	NEWLOC = LL;
+    var trav, tIndex = KEY[LOC];
+	do {
+		// step thru travel array
+    	trav = Math.abs(TRAVEL[tIndex]);
+        out('**trav:' + trav + ' (' + (tIndex) + ')');
+    } while ((trav % 1000) != K && TRAVEL[tIndex++] > 0);
+
+	if ((trav % 1000) != K) { 
+    	RSPEAK(wrongMove(K)); return; // 50
+    }
 	
-	K = NEWLOC % 100; 
-//	if (NEWLOC <=  300) GOTO 13
-//	if (PROP[K] ! =  NEWLOC/100-3) GOTO 16
-//12	if (TRAVEL[KK] < 0) CALL BUG(25) 
-//	KK = KK+1
-//	NEWLOC = Math.abs(TRAVEL[KK]) /1000
-//	if (NEWLOC == LL) GOTO 12
-//	LL = NEWLOC
-//	GOTO 11
-//
-//13	if (NEWLOC <=  100) GOTO 14
-//	if (TOTING(K)  || (NEWLOC > 200 && AT(K) ) ) GOTO 16
-//	GOTO 12
-//
-//14	if (NEWLOC ! =  0 &&  !PCT(NEWLOC) ) GOTO 12
-//16	NEWLOC = LL % 1000;
-//	if (NEWLOC <=  300) GOTO 2
-//	if (NEWLOC <=  500) GOTO 30000
-//	CALL RSPEAK(NEWLOC-500) 
-//	NEWLOC = LOC
-//	GOTO 2
+	var LL;
+	// LL % 1000 == 1 last entry of travel array
+	// trav is now corrrect move
+
+	
+// 10
+	LL = (LL / 1000)>>0;
+// 11
+	NEWLOC = LL;
+	K = NEWLOC % 100;
+while(1) {	
+	nn = LL = NEWLOC
+	mm = K
+
+	NEWLOC == 0 // 16
+	NEWLOC <= 100, PCT(NEWLOC) // 16
+	NEWLOC <= 200, TOTING(K) // 16
+	NEWLOC <= 300, TOTING(K) || AT(K) // 16
+	NEWLOC <= 400, PROP[K] != NEWLOC/100-3 // 16
+	
+	if (TRAVEL[KK] < 0) CALL BUG(25) 
+	KK = KK+1;
+	NEWLOC = (Math.abs(TRAVEL[KK])/1000)>>0
+	if (NEWLOC == LL) GOTO 12
+	LL = NEWLOC;
+}	
+	
+	
+	if (NEWLOC <= 300) GOTO 13
+	if (PROP[K] !=  NEWLOC/100-3) GOTO 16
+// 12
+	if (TRAVEL[KK] < 0) CALL BUG(25) 
+	KK = KK+1;
+	NEWLOC = (Math.abs(TRAVEL[KK])/1000)>>0
+	if (NEWLOC == LL) GOTO 12
+	LL = NEWLOC;
+	GOTO 11
+
+// 13
+	if (NEWLOC <= 100) GOTO 14
+	if (TOTING(K) || (NEWLOC > 200 && AT(K))) GOTO 16
+	else GOTO 12
+
+// 14
+	if (NEWLOC != 0 && !PCT(NEWLOC)) GOTO 12
+
+// 16
+	NEWLOC = LL % 1000;
+	if (NEWLOC <= 300) return;
+	if (NEWLOC <=  500) specialMotion();
+	RSPEAK(NEWLOC-500);
+	NEWLOC = LOC;
+	return;
+	  
+	  
 //
 //C  SPECIAL MOTIONS COME HERE.  LABELLING CONVENTION: STATEMENT NUMBERS NNNXX
 //C  (XX = 00-99)  ARE USED FOR SPECIAL CASE NUMBER NNN (NNN = 301-500) .
@@ -777,22 +814,6 @@ function sayWhatToDo(object) {
 	out('What do you want to do with the ' + object + '?');
 }
 
-/**
- * 
- * @param text
- * @returns
- */
-function parseInput(text) {
-	var words = new Array();
-	words = text.match(/\S+/g);
-	word1 = words[0];
-    word2 = (words.length > 1) ? words[1] : '';
-	VERB = 0;
-	OBJ = 0;
-	WD1 = word1.substr(0,5).toUpperCase();
-	WD2 = (word2 == '') ? 0 : word2.substr(0,5).toUpperCase();
-	return VOCAB(WD1,-1);
-}
 
 //C  DESCRIPTION OF THE DATABASE FORMAT
 //C
@@ -1024,8 +1045,8 @@ function parseVocab(ndx) {
 	var TABNDX = 1;
 	while (++ndx, KTAB[TABNDX] = parseInt(LINES[ndx]), KTAB[TABNDX] != -1) {
 		ATAB[TABNDX++] = LINES[ndx].substr(8, 5).trim();
-	};
-};
+	}
+}
 
 // READ IN THE INITIAL LOCATIONS FOR EACH OBJECT.  ALSO THE IMMOVABILITY INFO.
 // PLAC CONTAINS INITIAL LOCATIONS OF OBJECTS.  FIXD IS -1 FOR IMMOVABLE
@@ -3285,16 +3306,9 @@ function POOF() {
 // UTILITY ROUTINES (SHIFT, RAN, DATIME, CIAO, BUG)
 // No real need ...
 
-// RETURN VAL LEFT-SHIFTED (LOGICALLY) DIST BITS (RIGHT-SHIFT IF DIST<0).
-function SHIFT(val, dist) {
-	if (dist >= 0) return (val << dist);
-	else return (val >> Math.abs(dist));
-}
 
-// RAN RETURNS A VALUE UNIFORMLY SELECTED BETWEEN 0 AND RANGE-1. 
-function RAN(range) {
-	return (range * Math.random())>>0; // right shift 0 to make this integer (alt. Math.floor)
-}
+
+
 
 // RETURN THE DATE AND TIME IN D AND T. (won't because javascript won't modify d and t)
 function DATIME(d, t) {
