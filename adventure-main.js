@@ -117,10 +117,6 @@ var LOC;
 var NEWLOC;
 var OLDLOC;
 var OLDLC2;
-var VERB;
-var OBJ;
-var WD1;
-var WD2;
 var IDONDX;
 var MXSCOR;
 var SCORE = 0;
@@ -147,25 +143,29 @@ var YES;
 var START;
 
 var gameOver = false;
+
+// I/O for html/js
+var isTouch = (('ontouchstart' in window) || (navigator.msMaxTouchPoints > 0)); // touch device?
+var displayText; // area to output messages
+var commandLine; // area to input commands
+// globals holding 1st 2 words of input
 var word1 = '';
 var word2 = '';
+var WD1; // 1st 5 chars of word1 in uppercase
+var WD2; // 1st 5 chars of word2 in uppercase
+var VERB; // 'translated' word1
+var OBJ;  // 'translated' word2
+
+
 
 // STATEMENT FUNCTIONS
 
 // TRUE IF THE OBJ IS BEING CARRIED
-function TOTING(obj) {
-	return PLACE[obj] == -1;
-}
-
+function TOTING(obj) { return PLACE[obj] == -1; }
 // TRUE IF THE OBJ IS AT "LOC" (OR IS BEING CARRIED)
-function HERE(obj) {
-	return PLACE[obj] == LOC || TOTING(obj);
-}
-
+function HERE(obj) { return PLACE[obj] == LOC || TOTING(obj); }
 // TRUE IF ON EITHER SIDE OF TWO-PLACED OBJECT
-function AT(obj) {
-	return PLACE[obj] == LOC || FIXED[obj] == LOC;
-}
+function AT(obj) { return PLACE[obj] == LOC || FIXED[obj] == LOC; }
 
 function LIQ2(pbotl) { /** test ok **/
 	return (1-pbotl)*WATER + (pbotl/2>>0)*(WATER+OIL);
@@ -203,13 +203,123 @@ function PCT(n) { /** test ok **/
 	return (RAN(100) < n);
 }
 
+function startup() {
+	// initialize variables for I/O
+	commandLine = document.getElementById("commandLine");
+	displayText = document.getElementById('displayText');
+    // Install command line listener
+    commandLine.onkeypress = function(event) {
+        if (event.keyCode == 13) processCommand();
+    };
+	
+	out('Initializing...');
+	// read the database
+	initDatabase();
+
+	out('INIT Done');
+
+	start();
+}
+
+function start() {
+	
+	// START-UP, DWARF STUFF
+	// 1
+	// DEMO = START(0) -> no demos 
+	// CALL MOTD( false) 
+	I = RAN(1);
+	HINTED[3] = YES(65,1,0); // Check if he wants a hint
+	NEWLOC = 1; // Set the new location
+	//SETUP = 3
+	if (HINTED[3]) LIMIT = 1000;
+	else LIMIT = 330; // The limit is 330 moves unless he has taken a hint
+	
+	// start calling functions
+	
+	// CAN'T LEAVE CAVE ONCE IT'S CLOSING (EXCEPT BY MAIN OFFICE) .
+	// 2 we come back here...
+	if (NEWLOC <  9 && NEWLOC != 0 && CLOSNG) {
+		RSPEAK(130) ; /* "This exit is closed. Please leave via main office." */
+		NEWLOC = LOC;
+		if (!PANIC) CLOCK2 = 15;
+		PANIC = true;
+	}
+	// SEE IF A DWARF HAS SEEN HIM AND HAS COME FROM WHERE HE WANTS TO GO.  IF SO,
+	// THE DWARF'S BLOCKING HIS WAY.  IF COMING FROM PLACE FORBIDDEN TO PIRATE
+	// (DWARVES ROOTED IN PLACE)  LET HIM GET OUT (AND ATTACKED) .
+	// 71
+	if (NEWLOC != LOC && !FORCED(LOC) && !BITSET(LOC,3)) {
+		for (var i = 1; i <= 5; i++) {
+			if (ODLOC[i] == NEWLOC && DSEEN[i]) {
+				NEWLOC = LOC;
+				RSPEAK(2); /* A little dwarf with a big knife blocks your way. */
+				break;
+			}
+		}
+	}
+	LOC = NEWLOC;
+	// DWARF STUFF.  SEE EARLIER COMMENTS FOR DESCRIPTION OF VARIABLES.  REMEMBER
+	// SIXTH DWARF IS PIRATE AND IS THUS VERY DIFFERENT EXCEPT FOR MOTION RULES.
+	//
+	// FIRST OFF, DON'T LET THE DWARVES FOLLOW HIM INTO A PIT OR A WALL.  ACTIVATE
+	// THE WHOLE MESS THE FIRST TIME HE GETS AS FAR AS THE HALL OF MISTS (LOC 15) .
+	// IF NEWLOC IS FORBIDDEN TO PIRATE (IN PARTICULAR, IF IT'S BEYOND THE TROLL
+	// BRIDGE) , BYPASS DWARF STUFF.  THAT WAY PIRATE CAN'T STEAL RETURN TOLL, AND
+	// DWARVES CAN'T MEET THE BEAR.  ALSO MEANS DWARVES WON'T FOLLOW HIM INTO DEAD
+	// END IN MAZE, BUT C'EST LA VIE.  THEY'LL WAIT FOR HIM OUTSIDE THE DEAD END.
+
+	if (LOC != 0 && !FORCED(LOC) && !BITSET(NEWLOC,3)) {
+		if (DFLAG == 0) if (LOC >= 15) DFLAG = 1; // reached hall of mists, activate dwarves
+		else if (DFLAG != 1) {
+			DTOTAL = 0;
+			ATTACK = 0;
+			STICK = 0;
+			for (var i = 1; i <= 6; i++) moveDwarf(i);
+			// NOW WE KNOW WHAT'S HAPPENING.  LET'S TELL THE POOR SUCKER ABOUT IT.
+			if (DTOTAL != 0) checkAttack();
+		}
+		else if (LOC >= 15 && !PCT(95)) { // enter Hall of Mists
+			firstDwarf();
+		}
+	}
+	// DESCRIBE THE CURRENT LOCATION AND (MAYBE)  GET NEXT COMMAND.
+	// PRINT TEXT FOR CURRENT LOC.
+	//
+	//2000
+	describeLocation();
+	//2009
+	//K = 54;
+	//2010	
+	//SPK = K;
+	//2011	
+	//RSPEAK(SPK);
+
+	//2012
+	VERB = 0;
+	OBJ = 0;
+
+	// KICK THE RANDOM NUMBER GENERATOR JUST TO ADD VARIETY TO THE CHASE.  ALSO,
+	// IF CLOSING TIME, CHECK FOR ANY OBJECTS BEING TOTED WITH PROP < 0 AND SET
+	// THE PROP TO -1-PROP.  THIS WAY OBJECTS WON'T BE DESCRIBED UNTIL THEY'VE
+	// BEEN PICKED UP AND PUT DOWN SEPARATE FROM THEIR RESPECTIVE PILES.  DON'T
+	// TICK CLOCK1 UNLESS WELL INTO CAVE (AND NOT AT Y2) .
+	if (CLOSED) { //GOTO 2605
+		if (PROP[OYSTER] < 0 && TOTING(OYSTER)) PSPEAK(OYSTER,1);
+		/* Interesting.  There seems to be something written on the underside of the oyster. */
+		for (var i = 1; i <= 100; i++) {
+			if (TOTING(i)  && PROP[i] < 0) PROP[i] = -1-PROP[i];
+		}
+	}
+	//2605
+	WZDARK = DARK();
+	if (KNFLOC > 0 && KNFLOC !=  LOC) KNFLOC = 0;
+	i = RAN(1); 
+//		CALL GETIN(WD1,WD1X,WD2,WD2X) 
+}
 
 
 	
-//I/O for html/js
-var isTouch = (('ontouchstart' in window) || (navigator.msMaxTouchPoints > 0)); // touch device?
-var displayText; // area to output messages
-var commandLine; // area to input commands
+
 
 //Display a string 
 function out(s) { /** test ok **/
@@ -803,21 +913,13 @@ function parseInput(text) {
 // SECTION 6'S STUFF.  CTEXT[N] POINTS TO A PLAYER-CLASS MESSAGE.  MTEXT IS FOR
 // SECTION 12.  WE ALSO CLEAR COND.  SEE DESCRIPTION OF SECTION 9 FOR DETAILS.
 //
-
-function setup() {
+/**
+ *
+ */
+function initDatabase() {
 	
 	var sections = new Array();
 	var OLDLOC = -1;
-
-	// setup I/O
-    commandLine = document.getElementById("commandLine");
-    // Command line listener
-    commandLine.onkeypress = function(event) {
-        if (event.keyCode == 13) getCommand();
-    };
-    displayText = document.getElementById('displayText');
-    
-    out('Initializing...');
     
 	// Init tables
 	for (var i = 1; i <= 300; i++) {
@@ -875,7 +977,7 @@ function setup() {
 	// FINALLY, SINCE WE'RE CLEARLY SETTING THINGS UP FOR THE FIRST TIME...
 	POOF();
 
-    out('INIT Done');
+    
 }
 
 // SECTIONS 1, 2, 5, 6, 10, 12.  READ MESSAGES AND SET UP POINTERS.
@@ -1164,109 +1266,6 @@ function initGlobals() {
 	SCORNG =  false;
 }
 
-//
-
-//C  START-UP, DWARF STUFF
-//
-setup(); // read the database & set up variables
-
-start();
-
-function start() {
-	
-	// START-UP, DWARF STUFF
-	// 1
-	// DEMO = START(0) -> no demos 
-	// CALL MOTD( false) 
-	I = RAN(1);
-	HINTED[3] = YES(65,1,0); // Check if he wants a hint
-	NEWLOC = 1; // Set the new location
-	//SETUP = 3
-	if (HINTED[3]) LIMIT = 1000;
-	else LIMIT = 330; // The limit is 330 moves unless he has taken a hint
-	
-	// start calling functions
-	
-	// CAN'T LEAVE CAVE ONCE IT'S CLOSING (EXCEPT BY MAIN OFFICE) .
-	// 2 we come back here...
-	if (NEWLOC <  9 && NEWLOC != 0 && CLOSNG) {
-		RSPEAK(130) ; /* "This exit is closed. Please leave via main office." */
-		NEWLOC = LOC;
-		if (!PANIC) CLOCK2 = 15;
-		PANIC = true;
-	}
-	// SEE IF A DWARF HAS SEEN HIM AND HAS COME FROM WHERE HE WANTS TO GO.  IF SO,
-	// THE DWARF'S BLOCKING HIS WAY.  IF COMING FROM PLACE FORBIDDEN TO PIRATE
-	// (DWARVES ROOTED IN PLACE)  LET HIM GET OUT (AND ATTACKED) .
-	// 71
-	if (NEWLOC != LOC && !FORCED(LOC) && !BITSET(LOC,3)) {
-		for (var i = 1; i <= 5; i++) {
-			if (ODLOC[i] == NEWLOC && DSEEN[i]) {
-				NEWLOC = LOC;
-				RSPEAK(2); /* A little dwarf with a big knife blocks your way. */
-				break;
-			}
-		}
-	}
-	LOC = NEWLOC;
-	// DWARF STUFF.  SEE EARLIER COMMENTS FOR DESCRIPTION OF VARIABLES.  REMEMBER
-	// SIXTH DWARF IS PIRATE AND IS THUS VERY DIFFERENT EXCEPT FOR MOTION RULES.
-	//
-	// FIRST OFF, DON'T LET THE DWARVES FOLLOW HIM INTO A PIT OR A WALL.  ACTIVATE
-	// THE WHOLE MESS THE FIRST TIME HE GETS AS FAR AS THE HALL OF MISTS (LOC 15) .
-	// IF NEWLOC IS FORBIDDEN TO PIRATE (IN PARTICULAR, IF IT'S BEYOND THE TROLL
-	// BRIDGE) , BYPASS DWARF STUFF.  THAT WAY PIRATE CAN'T STEAL RETURN TOLL, AND
-	// DWARVES CAN'T MEET THE BEAR.  ALSO MEANS DWARVES WON'T FOLLOW HIM INTO DEAD
-	// END IN MAZE, BUT C'EST LA VIE.  THEY'LL WAIT FOR HIM OUTSIDE THE DEAD END.
-
-	if (LOC != 0 && !FORCED(LOC) && !BITSET(NEWLOC,3)) {
-		if (DFLAG == 0) if (LOC >= 15) DFLAG = 1; // reached hall of mists, activate dwarves
-		else if (DFLAG != 1) {
-			DTOTAL = 0;
-			ATTACK = 0;
-			STICK = 0;
-			for (var i = 1; i <= 6; i++) moveDwarf(i);
-			// NOW WE KNOW WHAT'S HAPPENING.  LET'S TELL THE POOR SUCKER ABOUT IT.
-			if (DTOTAL != 0) checkAttack();
-		}
-		else if (LOC >= 15 && !PCT(95)) { // enter Hall of Mists
-			firstDwarf();
-		}
-	}
-	// DESCRIBE THE CURRENT LOCATION AND (MAYBE)  GET NEXT COMMAND.
-	// PRINT TEXT FOR CURRENT LOC.
-	//
-	//2000
-	describeLocation();
-	//2009
-	//K = 54;
-	//2010	
-	//SPK = K;
-	//2011	
-	//RSPEAK(SPK);
-
-	//2012
-	VERB = 0;
-	OBJ = 0;
-
-	// KICK THE RANDOM NUMBER GENERATOR JUST TO ADD VARIETY TO THE CHASE.  ALSO,
-	// IF CLOSING TIME, CHECK FOR ANY OBJECTS BEING TOTED WITH PROP < 0 AND SET
-	// THE PROP TO -1-PROP.  THIS WAY OBJECTS WON'T BE DESCRIBED UNTIL THEY'VE
-	// BEEN PICKED UP AND PUT DOWN SEPARATE FROM THEIR RESPECTIVE PILES.  DON'T
-	// TICK CLOCK1 UNLESS WELL INTO CAVE (AND NOT AT Y2) .
-	if (CLOSED) { //GOTO 2605
-		if (PROP[OYSTER] < 0 && TOTING(OYSTER)) PSPEAK(OYSTER,1);
-		/* Interesting.  There seems to be something written on the underside of the oyster. */
-		for (var i = 1; i <= 100; i++) {
-			if (TOTING(i)  && PROP[i] < 0) PROP[i] = -1-PROP[i];
-		}
-	}
-	//2605
-	WZDARK = DARK();
-	if (KNFLOC > 0 && KNFLOC !=  LOC) KNFLOC = 0;
-	i = RAN(1); 
-//		CALL GETIN(WD1,WD1X,WD2,WD2X) 
-}
 
 function describeLocation() {
 	if (LOC == 0) { 
