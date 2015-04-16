@@ -269,6 +269,9 @@ function start() {
 		}
 	}
 	//2605
+
+
+
 	WZDARK = DARK();
 	if (KNFLOC > 0 && KNFLOC !=  LOC) KNFLOC = 0;
 	i = RAN(1); 
@@ -276,8 +279,14 @@ function start() {
 }
 
 
-	
-
+/**
+ * int - convert to integer number (used for divisions)
+ * @param a number to convert
+ * @returns integer number
+ */
+function int(a) { 
+	return ((a)>>0); 
+}
 
 //Display a string 
 function out(s) { /** test ok **/
@@ -312,7 +321,7 @@ function getCommand() {
 	
 	VERB = (WD1 == 0) ? -1 : VOCAB(WD1,-1);
 	gCommand = VERB % 1000;
-	gCommType = (VERB / 1000)>>0; // make integer
+	gCommType = int(VERB / 1000); // make integer
 	OBJ = (WD2 == 0) ? -1 : VOCAB(WD2,-1);
 
 	//Give focus to commandLine if not a touch device.
@@ -337,7 +346,9 @@ function processCommand() {
 		switch (gCommType) {
 			case 0: // motion
 				//goto 8
-				processMove();
+				LOC = processMove();
+				LOC = NEWLOC;
+				describeLocation();
 				break;
 			case 1: // object
 				processObject();
@@ -374,11 +385,20 @@ function processCommand() {
  * 8
  */
 function processMove() {
-	var	K = gCommand, KK = KEY[LOC];	
-	NEWLOC = LOC;
-	if (KK == 0) throw 'LOCATION HAS NO TRAVEL ENTRIES'; // BUG(26)
+	var travelVerb, 
+		commandVerb = gCommand,
+		destination, // entry from TRAVEL array
+		condition, // destination/1000
+		validMove = false, // true when entry found in table
+		index, 
+		firstIndex = KEY[LOC], // start index into TRAVEL table for this location
+		nextLoc,
+		newLoc = LOC;
 	
+	//NEWLOC = LOC;
+	if (firstIndex == 0) throw 'LOCATION HAS NO TRAVEL ENTRIES'; // BUG(26)
 	
+
 //	if (WD1 == 'WEST') {
 //		IWEST++;
 //		if (IWEST == 10) RSPEAK(17); /* If you prefer, simply type w rather than west. */
@@ -393,217 +413,137 @@ function processMove() {
 //	}
 //	//	if (WD1 == 'ENTER' && WD2 !=  0) GOTO 2800
 
-	if (K == NULL) return;
-	if (K == BACK) goBack(); return; // 20
-	if (K == LOOK) look(); return; // 30
-	if (K == CAVE) cave(); return; // 40
+	if (commandVerb == NULL) return;
+	if (commandVerb == BACK) { goBack(); return; } // 20
+	if (commandVerb == LOOK) { look(); return; } // 30
+	if (commandVerb == CAVE) { cave(); return; } // 40
 
-	
-//	C  SECTION 3: TRAVEL TABLE.  EACH LINE CONTAINS A LOCATION NUMBER (X), A SECOND
-//	C	LOCATION NUMBER (Y), AND A LIST OF MOTION NUMBERS (SEE SECTION 4).
-//	C	EACH MOTION REPRESENTS A VERB WHICH WILL GO TO Y IF CURRENTLY AT X.
-//	C	Y, IN TURN, IS INTERPRETED AS FOLLOWS.  LET M=Y/1000, N=Y MOD 1000.
-//	C		IF N<=300	IT IS THE LOCATION TO GO TO.
-//	C		IF 300<N<=500	N-300 IS USED IN A COMPUTED GOTO TO
-//	C					A SECTION OF SPECIAL CODE.
-//	C		IF N>500	MESSAGE N-500 FROM SECTION 6 IS PRINTED,
-//	C					AND HE STAYS WHEREVER HE IS.
-//	C	MEANWHILE, M SPECIFIES THE CONDITIONS ON THE MOTION.
-//	C		IF M=0		IT'S UNCONDITIONAL.
-//	C		IF 0<M<100	IT IS DONE WITH M% PROBABILITY.
-//	C		IF M=100	UNCONDITIONAL, BUT FORBIDDEN TO DWARVES.
-//	C		IF 100<M<=200	HE MUST BE CARRYING OBJECT M-100.
-//	C		IF 200<M<=300	MUST BE CARRYING OR IN SAME ROOM AS M-200.
-//	C		IF 300<M<=400	PROP(M MOD 100) MUST *NOT* BE 0.
-//	C		IF 400<M<=500	PROP(M MOD 100) MUST *NOT* BE 1.
-//	C		IF 500<M<=600	PROP(M MOD 100) MUST *NOT* BE 2, ETC.
-//	C	IF THE CONDITION (IF ANY) IS NOT MET, THEN THE NEXT *DIFFERENT*
-//	C	"DESTINATION" VALUE IS USED (UNLESS IT FAILS TO MEET *ITS* CONDITIONS,
-//	C	IN WHICH CASE THE NEXT IS FOUND, ETC.).  TYPICALLY, THE NEXT DEST WILL
-//	C	BE FOR ONE OF THE SAME VERBS, SO THAT ITS ONLY USE IS AS THE ALTERNATE
-//	C	DESTINATION FOR THOSE VERBS.  FOR INSTANCE:
-//	C		15	110022	29	31	34	35	23	43
-//	C		15	14	29
-//	C	THIS SAYS THAT, FROM LOC 15, ANY OF THE VERBS 29, 31, ETC., WILL TAKE
-//	C	HIM TO 22 IF HE'S CARRYING OBJECT 10, AND OTHERWISE WILL GO TO 14.
-//	C		11	303008	49
-//	C		11	9	50
-//	C	THIS SAYS THAT, FROM 11, 49 TAKES HIM TO 8 UNLESS PROP(3)=0, IN WHICH
-//	C	CASE HE GOES TO 9.  VERB 50 TAKES HIM TO 9 REGARDLESS OF PROP(3).
-	
 	OLDLC2 = OLDLOC;
 	OLDLOC = LOC;
-// 9	
-    var altloc, trav, tIndex = KEY[LOC];
-	do {
-		// step thru travel array
-    	trav = Math.abs(TRAVEL[tIndex]);
-        out('**trav:' + trav + ' (' + (tIndex) + ')');
-    } while ((trav % 1000) != K && TRAVEL[tIndex++] > 0);
-
-	if ((trav % 1000) != K) { 
-    	RSPEAK(wrongMove(K)); return; // 50
+	
+	// find traveloption
+    for (index = firstIndex; TRAVEL[index] > 0; index++) {
+        travelVerb = Math.abs(TRAVEL[index]) % 1000;
+        if (commandVerb == travelVerb) {
+            validMove = true;
+            break;
+        }
     }
-	
-	// LL % 1000 == 1 last entry of travel array
-	// trav is now corrrect move (=LL)
-// 10
-	var LL = (trav / 1000)>>0;
-	altloc = (trav / 1000)>>0;
-// 11
-	NEWLOC = (LL / 1000)>>0;
-	K = NEWLOC % 100;
-	
-//	newloc	11	13	14
-//  ====================================
-//	0		13	14	16
-//	<=100	13	14	PCT(NEWLOC)->16
-//					!PCT(NEWLOC)->12	
-//	<=200	13	TOTING(K)->16
-//				!TOTING(K)->12
-//	<=300	13	TOTING(K) || AT(K)->16
-//				!TOTING(K) && !AT(K)->12
-//	<=400	PROP[K] != NEWLOC/100-3->16
-//			PROP[K] == NEWLOC/100-3->12
-//  <=500
-	
-	// 12 	do{
-	//		TRAVEL[tIndex] < 0 -> 25 CONDITIONAL TRAVEL ENTRY WITH NO ALTERNATIVE
-	//		tIndex++;
-	//		trav = Math.abs(TRAVEL[tIndex])
-	//		NEWLOC = (trav/1000)>>0
-	//		}while(NEWLOC == LL)
-	//		LL = NEWLOC
-	//		NEWLOC = (LL / 1000)>>0;
-	//		K = NEWLOC % 100;
-	//		recheck
-	
-	// find next possibility
-	do {
-		// step thru travel array
-		if (TRAVEL[tIndex] < 0) throw 'CONDITIONAL TRAVEL ENTRY WITH NO ALTERNATIVE';
-    	trav = Math.abs(TRAVEL[tIndex++]);
-        out('**trav:' + trav + ' (' + (tIndex--) + ')');
-    } while ((trav / 1000)>>0 != altloc);
-	NEWLOC = (trav / 1000)>>0;
-	
-	
+	if (!validMove) {
+        RSPEAK(wrongMove(commandVerb));
+        return;
+    }
 
-//			if (NEWLOC <= 300) GOTO 13
-//			if (PROP[K] !=  NEWLOC/100-3) GOTO 16
-//		// 12
-//			if (TRAVEL[KK] < 0) CALL BUG(25) 
-//			KK = KK+1;
-//			NEWLOC = (Math.abs(TRAVEL[KK])/1000)>>0
-//			if (NEWLOC == LL) GOTO 12
-//			LL = NEWLOC;
-//			GOTO 11
-//		
-//		// 13
-//			if (NEWLOC <= 100) GOTO 14
-//			if (TOTING(K) || (NEWLOC > 200 && AT(K))) GOTO 16
-//			else GOTO 12
-//		
-//		// 14
-//			if (NEWLOC != 0 && !PCT(NEWLOC)) GOTO 12
-//		
-//		// 16
-//			NEWLOC = LL % 1000;
-//			if (NEWLOC <= 300) return;
-//			if (NEWLOC <=  500) specialMotion();
-//			RSPEAK(NEWLOC-500);
-//			NEWLOC = LOC;
-//			return;
-//		
-//		while(1) {	
-//			nn = LL = NEWLOC
-//			mm = K
-//		
-//			NEWLOC == 0 // 16
-//			NEWLOC <= 100, PCT(NEWLOC) // 16
-//			NEWLOC <= 200, TOTING(K) // 16
-//			NEWLOC <= 300, TOTING(K) || AT(K) // 16
-//			NEWLOC <= 400, PROP[K] != NEWLOC/100-3 // 16
+    destination = int(TRAVEL[index]/1000);
+    condition = int(destination/1000);
+
+    // 12
+    while(!checkCondition(condition)) { // check if conditions are met
+        do { // find travel option
+            if (TRAVEL[index] < 0) throw 'CONDITIONAL TRAVEL ENTRY WITH NO ALTERNATIVE';
+            nextLoc = int(Math.abs(TRAVEL[++index])/1000);
+        } while(nextLoc == destination);
+        destination = nextLoc;
+        condition = int(destination/1000);
+    }
+    // now we have a location to goto
+	newLoc = destination % 1000;
 	
-//	if (TRAVEL[KK] < 0) CALL BUG(25) 
-//	KK = KK+1;
-//	NEWLOC = (Math.abs(TRAVEL[KK])/1000)>>0
-//	if (NEWLOC == LL) GOTO 12
-//	LL = NEWLOC;
-
-
-	if (NEWLOC <= 300) {
-	    out("Normal motion. NEWLOC:" + NEWLOC);
+	if (newLoc > 300) {
+		if (newLoc <= 500) newLoc = specialMotions(newLoc);
+		else {
+			RSPEAK(newLoc - 500);
+			newLoc = LOC;
+		}
 	}
-	else if (NEWLOC > 300 && NEWLOC <= 500) {
-	    out("Special motion. NEWLOC:" + NEWLOC);
-	}
-	else { // NEWLOC > 500
-	    out("Speak: " + NEWLOC-500);
-	    NEWLOC = LOC; // stay in place
-	}
+	NEWLOC = newLoc;
+	return newLoc;
 }
-	
-	
 
-	  
+/**
+ * checkCondition - validate travel option, see if conditions are met
+ * @param condition to check
+ * @returns true when new destination can be reached (false if not)
+ */
+function checkCondition(condition) {
+    var object = condition % 100;
+    if (condition == 0) return true;
+    if (condition <= 100) return PCT(condition);
+    if (condition <= 200) return TOTING(object);
+    if (condition <= 300) return TOTING(object) || AT(object);
+    return PROP[object] != int(condition/100)-3;
+}
 	  
 //
 //C  SPECIAL MOTIONS COME HERE.  LABELLING CONVENTION: STATEMENT NUMBERS NNNXX
 //C  (XX = 00-99)  ARE USED FOR SPECIAL CASE NUMBER NNN (NNN = 301-500) .
-//
-//30000	NEWLOC = NEWLOC-300
-//	GOTO (30100,30200,30300) NEWLOC
-//	CALL BUG(20) 
-//
-//C  TRAVEL 301.  PLOVER-ALCOVE PASSAGE.  CAN CARRY ONLY EMERALD.  NOTE: TRAVEL
-//C  TABLE MUST INCLUDE "USELESS" ENTRIES GOING THROUGH PASSAGE, WHICH CAN NEVER
-//C  BE USED FOR ACTUAL MOTION, BUT CAN BE SPOTTED BY "GO BACK".
-//
-//30100	NEWLOC = 99+100-LOC
-//	if (HOLDNG == 0 || (HOLDNG == 1 && TOTING(EMRALD) ) ) GOTO 2
-//	NEWLOC = LOC
-//	CALL RSPEAK(117) 
-//	GOTO 2
-//
-//C  TRAVEL 302.  PLOVER TRANSPORT.  DROP THE EMERALD (ONLY USE SPECIAL TRAVEL IF
-//C  TOTING IT) , SO HE'S FORCED TO USE THE PLOVER-PASSAGE TO GET IT OUT.  HAVING
-//C  DROPPED IT, GO BACK AND PRETEND HE WASN'T CARRYING IT AFTER ALL.
-//
-//30200	CALL DROP(EMRALD,LOC) 
-//	GOTO 12
-//
-//C  TRAVEL 303.  TROLL BRIDGE.  MUST BE DONE ONLY AS SPECIAL MOTION SO THAT
-//C  DWARVES WON'T WANDER ACROSS AND ENCOUNTER THE BEAR.  (THEY WON'T FOLLOW THE
-//C  PLAYER THERE BECAUSE THAT REGION IS FORBIDDEN TO THE PIRATE.)   IF
-//C  PROP[TROLL] = 1, HE'S CROSSED SINCE PAYING, SO STEP OUT AND BLOCK HIM.
-//C  (STANDARD TRAVEL ENTRIES CHECK FOR PROP[TROLL] = 0.)   SPECIAL STUFF FOR BEAR.
-//
-//30300	if (PROP[TROLL] ! =  1) GOTO 30310
-//	CALL PSPEAK(TROLL,1) 
-//	PROP[TROLL] = 0
-//	CALL MOVE(TROLL2,0) 
-//	CALL MOVE(TROLL2+100,0) 
-//	CALL MOVE(TROLL,PLAC[TROLL]) 
-//	CALL MOVE(TROLL+100,FIXD[TROLL]) 
-//	CALL JUGGLE(CHASM) 
-//	NEWLOC = LOC
-//	GOTO 2
-//
-//30310	NEWLOC = PLAC[TROLL]+FIXD[TROLL]-LOC
-//	if (PROP[TROLL] == 0) PROP[TROLL] = 1
-//	if ( !TOTING(BEAR) ) GOTO 2
-//	CALL RSPEAK(162) 
-//	PROP[CHASM] = 1
-//	PROP[TROLL] = 2
-//	CALL DROP(BEAR,NEWLOC) 
-//	FIXED[BEAR] = -1
-//	PROP[BEAR] = 3
-//	if (PROP[SPICES] < 0) TALLY2 = TALLY2+1
-//	OLDLC2 = NEWLOC
-//	GOTO 99
-//
-//C  END OF SPECIALS.
+/**
+ * specialMotions
+ * @param newLoc
+ * @returns
+ */
+function specialMotions(newLoc) {
+	
+	// TRAVEL 301.  PLOVER-ALCOVE PASSAGE.  CAN CARRY ONLY EMERALD.  NOTE: TRAVEL
+	// TABLE MUST INCLUDE "USELESS" ENTRIES GOING THROUGH PASSAGE, WHICH CAN NEVER
+	// BE USED FOR ACTUAL MOTION, BUT CAN BE SPOTTED BY "GO BACK".
+	if (newLoc == 301) {
+		newLoc = 99 + 100 - LOC;
+		if (HOLDNG != 0 && (HOLDNG != 1 || !TOTING(EMRALD))) {
+			newLoc = LOC;
+			RSPEAK(117);
+			/* Something you're carrying won't fit through the tunnel with you.
+               You'd best take inventory and drop something.*/
+		}
+		return newLoc;
+	}
+	// TRAVEL 302.  PLOVER TRANSPORT.  DROP THE EMERALD (ONLY USE SPECIAL TRAVEL IF
+	// TOTING IT) , SO HE'S FORCED TO USE THE PLOVER-PASSAGE TO GET IT OUT.  HAVING
+	// DROPPED IT, GO BACK AND PRETEND HE WASN'T CARRYING IT AFTER ALL.
+	if (newLoc == 302) {
+		DROP(EMRALD,LOC);
+		newLoc = 0; // GOTO 12 = find travel option
+		return newLoc;
+	}
+	// TRAVEL 303.  TROLL BRIDGE.  MUST BE DONE ONLY AS SPECIAL MOTION SO THAT
+	// DWARVES WON'T WANDER ACROSS AND ENCOUNTER THE BEAR.  (THEY WON'T FOLLOW THE
+	// PLAYER THERE BECAUSE THAT REGION IS FORBIDDEN TO THE PIRATE.)   IF
+	// PROP[TROLL] = 1, HE'S CROSSED SINCE PAYING, SO STEP OUT AND BLOCK HIM.
+	// (STANDARD TRAVEL ENTRIES CHECK FOR PROP[TROLL] = 0.)   SPECIAL STUFF FOR BEAR.
+	if (newLoc == 303) {
+		if (PROP[TROLL] == 1){
+			PSPEAK(TROLL,1);
+			PROP[TROLL] = 0;
+			MOVE(TROLL2, 0);
+			MOVE(TROLL2 + 100, 0);
+			MOVE(TROLL, PLAC[TROLL]);
+			MOVE(TROLL + 100, FIXD[TROLL]);
+			JUGGLE(CHASM);
+			newLoc = LOC;
+			return newLoc;
+		}
+		else {
+			newLoc = PLAC[TROLL] + FIXD[TROLL] - LOC;
+			if (PROP[TROLL] == 0) PROP[TROLL] = 1;
+			if (!TOTING(BEAR)) return newLoc;
+			RSPEAK(162);
+			/* Just as you reach the other side, the bridge buckles beneath the
+   		       weight of the bear, which was still following you around.  You
+   		       scrabble desperately for support, but as the bridge collapses you
+   		        stumble back and fall into the chasm. */ 
+			PROP[CHASM] = 1;
+			PROP[TROLL] = 2;
+			DROP(BEAR, newLoc); 
+			FIXED[BEAR] = -1;
+			PROP[BEAR] = 3;
+			if (PROP[SPICES] < 0) TALLY2++;
+			OLDLC2 = newLoc;
+			label99dead(); // won't return from here
+		}
+	}
+	throw 'SPECIAL TRAVEL (500>L>300) EXCEEDS GOTO LIST';
+}
+
 	
 	
 //C  HANDLE "GO BACK".  LOOK FOR VERB WHICH GOES FROM LOC TO OLDLOC, OR TO OLDLC2
@@ -694,7 +634,6 @@ function cave() {
 //	if (K == 17) SPK = 80
 //	CALL RSPEAK(SPK) 
 //	GOTO 2
-
 
 /**
  * NON-APPLICABLE MOTION.  VARIOUS MESSAGES DEPENDING ON WORD GIVEN.
@@ -3259,7 +3198,7 @@ function VOCAB(id, init) {
 		if (KTAB[i] == -1) {
 			if (init < 0) return -1; else throw 'REQUIRED VOCABULARY WORD NOT FOUND';
 		}
-		if (init >= 0 && (KTAB[i]/1000>>0) != init) continue;
+		if (init >= 0 && int(KTAB[i]/1000) != init) continue;
 		if (ATAB[i] == id) {
 			if (init < 0) return KTAB[i];
 			else return KTAB[i] % 1000;
