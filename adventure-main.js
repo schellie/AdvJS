@@ -434,7 +434,7 @@ function processMove() {
 	OLDLC2 = OLDLOC;
 	OLDLOC = LOC;
 // 9	
-    var trav, tIndex = KEY[LOC];
+    var altloc, trav, tIndex = KEY[LOC];
 	do {
 		// step thru travel array
     	trav = Math.abs(TRAVEL[tIndex]);
@@ -449,6 +449,7 @@ function processMove() {
 	// trav is now corrrect move (=LL)
 // 10
 	var LL = (trav / 1000)>>0;
+	altloc = (trav / 1000)>>0;
 // 11
 	NEWLOC = (LL / 1000)>>0;
 	K = NEWLOC % 100;
@@ -480,55 +481,68 @@ function processMove() {
 	// find next possibility
 	do {
 		// step thru travel array
-    	trav = Math.abs(TRAVEL[tIndex]);
-        out('**trav:' + trav + ' (' + (tIndex) + ')');
-    } while ((trav % 1000) != K && TRAVEL[tIndex++] > 0);
+		if (TRAVEL[tIndex] < 0) throw 'CONDITIONAL TRAVEL ENTRY WITH NO ALTERNATIVE';
+    	trav = Math.abs(TRAVEL[tIndex++]);
+        out('**trav:' + trav + ' (' + (tIndex--) + ')');
+    } while ((trav / 1000)>>0 != altloc);
+	NEWLOC = (trav / 1000)>>0;
 	
 	
-	
 
-	if (NEWLOC <= 300) GOTO 13
-	if (PROP[K] !=  NEWLOC/100-3) GOTO 16
-// 12
-	if (TRAVEL[KK] < 0) CALL BUG(25) 
-	KK = KK+1;
-	NEWLOC = (Math.abs(TRAVEL[KK])/1000)>>0
-	if (NEWLOC == LL) GOTO 12
-	LL = NEWLOC;
-	GOTO 11
-
-// 13
-	if (NEWLOC <= 100) GOTO 14
-	if (TOTING(K) || (NEWLOC > 200 && AT(K))) GOTO 16
-	else GOTO 12
-
-// 14
-	if (NEWLOC != 0 && !PCT(NEWLOC)) GOTO 12
-
-// 16
-	NEWLOC = LL % 1000;
-	if (NEWLOC <= 300) return;
-	if (NEWLOC <=  500) specialMotion();
-	RSPEAK(NEWLOC-500);
-	NEWLOC = LOC;
-	return;
-
-while(1) {	
-	nn = LL = NEWLOC
-	mm = K
-
-	NEWLOC == 0 // 16
-	NEWLOC <= 100, PCT(NEWLOC) // 16
-	NEWLOC <= 200, TOTING(K) // 16
-	NEWLOC <= 300, TOTING(K) || AT(K) // 16
-	NEWLOC <= 400, PROP[K] != NEWLOC/100-3 // 16
+//			if (NEWLOC <= 300) GOTO 13
+//			if (PROP[K] !=  NEWLOC/100-3) GOTO 16
+//		// 12
+//			if (TRAVEL[KK] < 0) CALL BUG(25) 
+//			KK = KK+1;
+//			NEWLOC = (Math.abs(TRAVEL[KK])/1000)>>0
+//			if (NEWLOC == LL) GOTO 12
+//			LL = NEWLOC;
+//			GOTO 11
+//		
+//		// 13
+//			if (NEWLOC <= 100) GOTO 14
+//			if (TOTING(K) || (NEWLOC > 200 && AT(K))) GOTO 16
+//			else GOTO 12
+//		
+//		// 14
+//			if (NEWLOC != 0 && !PCT(NEWLOC)) GOTO 12
+//		
+//		// 16
+//			NEWLOC = LL % 1000;
+//			if (NEWLOC <= 300) return;
+//			if (NEWLOC <=  500) specialMotion();
+//			RSPEAK(NEWLOC-500);
+//			NEWLOC = LOC;
+//			return;
+//		
+//		while(1) {	
+//			nn = LL = NEWLOC
+//			mm = K
+//		
+//			NEWLOC == 0 // 16
+//			NEWLOC <= 100, PCT(NEWLOC) // 16
+//			NEWLOC <= 200, TOTING(K) // 16
+//			NEWLOC <= 300, TOTING(K) || AT(K) // 16
+//			NEWLOC <= 400, PROP[K] != NEWLOC/100-3 // 16
 	
 //	if (TRAVEL[KK] < 0) CALL BUG(25) 
 //	KK = KK+1;
 //	NEWLOC = (Math.abs(TRAVEL[KK])/1000)>>0
 //	if (NEWLOC == LL) GOTO 12
 //	LL = NEWLOC;
-}	
+
+
+	if (NEWLOC <= 300) {
+	    out("Normal motion. NEWLOC:" + NEWLOC);
+	}
+	else if (NEWLOC > 300 && NEWLOC <= 500) {
+	    out("Special motion. NEWLOC:" + NEWLOC);
+	}
+	else { // NEWLOC > 500
+	    out("Speak: " + NEWLOC-500);
+	    NEWLOC = LOC; // stay in place
+	}
+}
 	
 	
 
@@ -680,7 +694,7 @@ function cave() {
 //	if (K == 17) SPK = 80
 //	CALL RSPEAK(SPK) 
 //	GOTO 2
-}
+
 
 /**
  * NON-APPLICABLE MOTION.  VARIOUS MESSAGES DEPENDING ON WORD GIVEN.
@@ -1007,7 +1021,7 @@ function initDatabase() {
 	// Section 6
 	parseText(sections[6], RTEXT);
 	// Section 10
-	parseText(sections[10], LTEXT);
+	parseText(sections[10], CTEXT);
 	// Section 3
 	parseTravel(sections[3]);
 	// Section 4
