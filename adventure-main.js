@@ -109,6 +109,7 @@ var FOOBAR; // CURRENT PROGRESS IN SAYING "FEE FIE FOE FOO".
 var BONUS; // USED TO DETERMINE AMOUNT OF BONUS IF HE REACHES CLOSING
 var CLOCK1; // NUMBER OF TURNS FROM FINDING LAST TREASURE TILL CLOSING
 var CLOCK2; // NUMBER OF TURNS FROM FIRST WARNING TILL BLINDING FLASH
+var DETAIL; 
 
 //DATA SETUP/0/,BLKLIN/ true/
 var SETUP = 0; // not useful??
@@ -322,7 +323,7 @@ function getCommand() {
 	VERB = (WD1 == 0) ? -1 : VOCAB(WD1,-1);
 	gCommand = VERB % 1000;
 	gCommType = int(VERB / 1000); // make integer
-	OBJ = (WD2 == 0) ? -1 : VOCAB(WD2,-1);
+	OBJ = (WD2 == 0) ? -1 : VOCAB(WD2,-1) % 1000; // not sure if %1000
 
 	//Give focus to commandLine if not a touch device.
 	if (!isTouch) commandLine.focus();
@@ -347,8 +348,11 @@ function processCommand() {
 			case 0: // motion
 				//goto 8
 				LOC = processMove();
-				LOC = NEWLOC;
+				//LOC = NEWLOC;
+				if (FORCED(LOC)) LOC = processMove();
+				else if (DARK()) checkPit();
 				describeLocation();
+				checkHints();
 				break;
 			case 1: // object
 				processObject();
@@ -356,7 +360,7 @@ function processCommand() {
 			case 2: // action
 				//goto 4000
 				//VERB = command % 1000;
-				if (processAction()) RSPEAK(ACTSPK[VERB]); 
+				if (!processAction(gCommand%1000)) RSPEAK(ACTSPK[VERB]); 
 				break;
 			case 3: // special
 				//goto 2010
@@ -397,9 +401,25 @@ function processMove() {
 
 	if (firstIndex == 0) throw 'LOCATION HAS NO TRAVEL ENTRIES'; // BUG(26)
 	if (commandVerb == NULL) return;
-	if (commandVerb == BACK) { goBack(); return; } // 20
-	if (commandVerb == LOOK) { look(); return; } // 30
-	if (commandVerb == CAVE) { cave(); return; } // 40
+	if (commandVerb == BACK) { // 20
+		commandVerb = goBack();
+		if (commandVerb == 0) return newLoc; 
+	} 
+	if (commandVerb == LOOK) { // 30
+		if (DETAIL < 3) RSPEAK(15);
+		/* Sorry, but I am not allowed to give more detail.  I will repeat the long description of your location.*/
+		DETAIL++;
+		WZDARK = false;
+		ABB[LOC] = 0;
+		return newLoc;
+	} 
+	if (commandVerb == CAVE) { // 40
+		if (LOC < 8) RSPEAK(57); 
+		/* I don't know where the cave is, but hereabouts no stream can run on the surface for long.  I would try the stream. */  
+		else RSPEAK(58);
+		/* I need more detailed instructions to do that. */
+		return newLoc;
+	} 
 	if (WD1 == 'WEST') {
 		IWEST++;
 		if (IWEST == 10) RSPEAK(17); /* If you prefer, simply type w rather than west. */
@@ -407,7 +427,7 @@ function processMove() {
 	if (WD1 == 'ENTER' && (WD2 == 'STREA' || WD2 == 'WATER')) {
 		if (LIQLOC(LOC) == WATER) RSPEAK(70); /* Your feet are now wet. */
 		else RSPEAK(43); /* Where? */
-		return;
+		return newLoc;
 	}
 //	if ((WD1 == 'WATER' || WD1 == 'OIL') && (WD2 == 'PLANT' || WD2 == 'DOOR')) {
 //		if (AT[VOCAB(WD2, 1)]) WD2 = 'POUR';
@@ -427,7 +447,7 @@ function processMove() {
     }
 	if (!validMove) {
         RSPEAK(wrongMove(commandVerb));
-        return;
+        return newLoc;
     }
 
     destination = int(TRAVEL[index]/1000);
@@ -553,114 +573,37 @@ function specialMotions(newLoc, index) {
  * HANDLE "GO BACK"
  * 20
  */
-function goBack() { // check 
-	var destination, // entry from TRAVEL array
-		validMove = false, // true when entry found in table
-		index, 
-		firstIndex = KEY[LOC], // start index into TRAVEL table for this location
-		backLoc = OLDLOC;
+function goBack() { 
+	var backLoc = OLDLOC,
+		index, firstIndex = KEY[LOC],
+		nextLoc = 0,
+		forcedIndex = 0;
 	
-	if (FORCED[backLoc]) backLoc = OLDLC2;
+	if (FORCED(backLoc)) backLoc = OLDLC2;
 	OLDLC2 = OLDLOC;
 	OLDLOC = LOC;
-	
-	K2 = 0;
-	LL = 0;
-	
+	 
 	if (backLoc == LOC) {
-		RSPEAK(91); /* Sorry, but I no longer seem to remember how it was you got here. */
-		return;
+		RSPEAK(91);
+		return 0;
 	}
-	
-	// find traveloption
-    for (index = firstIndex; TRAVEL[index] > 0; index++) {
-    	destination = int(Math.abs(TRAVEL[index]/1000)) % 1000;
-        if (destination == backLoc) break;
-        if (destination > 300) continue;
-        
-    }/*
 	else {
-		LL = int(Math.abs(TRAVEL[KK])/1000) % 1000;
-		if (LL == K) {
-			K = Math.abs(TRAVEL[KK]) % 1000; 
-			KK = KEY[LOC];
-//			GOTO 9
-		}
-		if (LL > 300) {
-			if (TRAVEL[KK] < 0) {
-				KK = K2;
-				if (KK !=  0) {
-					K = Math.abs(TRAVEL[KK]) % 1000; 
-					KK = KEY[LOC];
-//					GOTO 9
-				}
-				RSPEAK(140);
-//				GOTO 2
+		for (index = firstIndex; TRAVEL[index] > 0; index++) {
+			nextLoc = int(Math.abs(TRAVEL[index])/1000)%1000;
+			if (nextLoc == backLoc) return Math.abs(travel[index])%1000;
+			if (nextLoc <= 300) {
+				if (FORCED(nextLoc) && int(Math.abs(TRAVEL[KEY[nextLoc]])/1000)%1000 == backLoc) forcedIndex = index;
 			}
-			KK = KK+1;
-//			GOTO 21
 		}
-		J = KEY[LL];
-		if (FORCED(LL)  && (Math.abs(TRAVEL[J]) /1000) % 1000  == K) K2 = KK;
-	}*/
-}
-//20	K = OLDLOC
-//	if (FORCED(K) ) K = OLDLC2
-//	OLDLC2 = OLDLOC
-//	OLDLOC = LOC
-//	K2 = 0
-//	if (K ! =  LOC) GOTO 21
-//	CALL RSPEAK(91) 
-//	GOTO 2
-//
-//21	LL = (Math.abs(TRAVEL[KK]) /1000) % 1000;
-//	if (LL == K) GOTO 25
-//	if (LL > 300) GOTO 22
-//	J = KEY[LL]
-//	if (FORCED(LL)  && (Math.abs(TRAVEL[J]) /1000) % 1000  == K) K2 = KK
-//22	if (TRAVEL[KK] < 0) GOTO 23
-//	KK = KK+1
-//	GOTO 21
-//
-//23	KK = K2
-//	if (KK ! =  0) GOTO 25
-//	CALL RSPEAK(140) 
-//	GOTO 2
-//
-//25	K = Math.abs(TRAVEL[KK]) % 1000; 
-//	KK = KEY[LOC]
-//	GOTO 9
-//
-//C  LOOK.  CAN'T GIVE MORE DETAIL.  PRETEND IT WASN'T DARK (THOUGH IT MAY "NOW"
-//C  BE DARK)  SO HE WON'T FALL INTO A PIT WHILE STARING INTO THE GLOOM.
-//
-/**
- * LOOK.  CAN'T GIVE MORE DETAIL.
- * 30
- */
-function look() {
-	if (DETAIL < 3) RSPEAK(15);
-	/* Sorry, but I am not allowed to give more detail.  I will repeat the long description of your location.*/
-	DETAIL++;
-	WZDARK = false;
-	ABB[LOC] = 0;
-	return;
+		index = forcedIndex;
+		if (index != 0) return Math.abs(travel[index])%1000;
+		else {
+			RSPEAK(140);
+			return 0;
+		}
+	}
 }
 
-//C  CAVE.  DIFFERENT MESSAGES DEPENDING ON WHETHER ABOVE GROUND.
-//
-/**
- * CAVE.  DIFFERENT MESSAGES DEPENDING ON WHETHER ABOVE GROUND.
- * 40
- */
-function cave() {
-	if (LOC < 8) RSPEAK(57); 
-	/* I don't know where the cave is, but hereabouts no stream can run on the surface for long.  I would try the stream. */  
-	else RSPEAK(58);
-	/* I need more detailed instructions to do that. */
-	return;
-}
-	
 /**
  * NON-APPLICABLE MOTION.  VARIOUS MESSAGES DEPENDING ON WORD GIVEN.
  * @param motion
@@ -685,7 +628,9 @@ function wrongMove(motion) {
  * 4000
  */
 function processAction(verb) {
+	var action = function() {};
 	VERB = verb;
+	
 	//if (WD2 != 0 && VERB != SAY)GOTO 2800
 	//IF(VERB.EQ.SAY)OBJ=WD2
 	//IF(OBJ.NE.0)GOTO 4090
@@ -1302,29 +1247,34 @@ function initGlobals() {
 
 
 function describeLocation() {
+	var str;
 	if (LOC == 0) { 
 		label99dead();
 		return;
 	}
-	var KK = STEXT[LOC];
-	if (ABB[LOC] % ABBNUM == 0 || KK == 0) KK = LTEXT[LOC];
-	if (!FORCED(LOC) && DARK()) {
-		if (WZDARK && PCT(35)) {
-			// THE EASIEST WAY TO GET KILLED IS TO FALL INTO A PIT IN PITCH DARKNESS.
-			RSPEAK(23); /* You fell into a pit and broke every bone in your body! */
-			OLDLC2 = LOC;
-			label99dead();
-			return;
-		}
-		else KK = RTEXT[16]; /* It is now pitch dark.  If you proceed you will likely fall into a pit. */
-	}
+	str = STEXT[LOC];
+	if ((ABB[LOC] % ABBNUM) == 0 || str == 0) str = LTEXT[LOC];
+	//out('LOC:'+LOC+', S:'+STEXT[LOC]+', L:'+LTEXT[LOC]+', ABB:'+ABB[LOC]+' ('+ABBNUM+')');
 	if (TOTING(BEAR)) RSPEAK(141); /* You are being followed by a very large, tame bear. */
-	SPEAK(KK);
+	SPEAK(str);
 
-	if (FORCED(LOC)) // GOTO 8 - figure out new location
 	if (LOC == 33 && PCT(25) && !CLOSNG) RSPEAK(8); /* A hollow voice says "PLUGH". */
 	
 	if (!DARK()) describeObjects();
+}
+
+/**
+ * checkPit - see if he's been crawling in the dark, and has fallen in a pit
+ */
+function checkPit() {
+	if (WZDARK && PCT(35)) {
+		// THE EASIEST WAY TO GET KILLED IS TO FALL INTO A PIT IN PITCH DARKNESS.
+		RSPEAK(23); /* You fell into a pit and broke every bone in your body! */
+		OLDLC2 = LOC;
+		label99dead();
+	}
+	else RSPEAK(16); /* It is now pitch dark.  If you proceed you will likely fall into a pit. */
+	return;
 }
 
 // PRINT OUT DESCRIPTIONS OF OBJECTS AT THIS LOCATION.  IF NOT CLOSING AND
@@ -1336,7 +1286,6 @@ function describeLocation() {
  * 
  */
 function describeObjects() {
-	
 	ABB[LOC]++;
 	var i = ATLOC[LOC];
 	while (i != 0) {
@@ -1538,167 +1487,8 @@ function checkHints() {
 //	TYPE 5199,(TK[I],I = 1,K) 
 //5199	FORMAT(/' I see no ',20A1) 
 //	GOTO 2012
-//C  FIGURE OUT THE NEW LOCATION
-//C
-//C  GIVEN THE CURRENT LOCATION IN "LOC", AND A MOTION VERB NUMBER IN "K", PUT
-//C  THE NEW LOCATION IN "NEWLOC".  THE CURRENT LOC IS SAVED IN "OLDLOC" IN CASE
-//C  HE WANTS TO RETREAT.  THE CURRENT OLDLOC IS SAVED IN OLDLC2, IN CASE HE
-//C  DIES.  (IF HE DOES, NEWLOC WILL BE LIMBO, AND OLDLOC WILL BE WHAT KILLED
-//C  HIM, SO WE NEED OLDLC2, WHICH IS THE LAST PLACE HE WAS SAFE.) 
-//
-//8	KK = KEY[LOC]
-//	NEWLOC = LOC
-//	if (KK == 0) CALL BUG(26) 
-//	if (K == NULL) GOTO 2
-//	if (K == BACK) GOTO 20
-//	if (K == LOOK) GOTO 30
-//	if (K == CAVE) GOTO 40
-//	OLDLC2 = OLDLOC
-//	OLDLOC = LOC
-//
-//9	LL = Math.abs(TRAVEL[KK]) 
-//	if (LL % 1000  == 1 || LL % 1000  == K) GOTO 10
-//	if (TRAVEL[KK] < 0) GOTO 50
-//	KK = KK+1
-//	GOTO 9
-//
-//10	LL = LL/1000
-//11	NEWLOC = LL/1000
-//	K = NEWLOC % 100; 
-//	if (NEWLOC <=  300) GOTO 13
-//	if (PROP[K] ! =  NEWLOC/100-3) GOTO 16
-//12	if (TRAVEL[KK] < 0) CALL BUG(25) 
-//	KK = KK+1
-//	NEWLOC = Math.abs(TRAVEL[KK]) /1000
-//	if (NEWLOC == LL) GOTO 12
-//	LL = NEWLOC
-//	GOTO 11
-//
-//13	if (NEWLOC <=  100) GOTO 14
-//	if (TOTING(K)  || (NEWLOC > 200 && AT(K) ) ) GOTO 16
-//	GOTO 12
-//
-//14	if (NEWLOC ! =  0 &&  !PCT(NEWLOC) ) GOTO 12
-//16	NEWLOC = LL % 1000;
-//	if (NEWLOC <=  300) GOTO 2
-//	if (NEWLOC <=  500) GOTO 30000
-//	CALL RSPEAK(NEWLOC-500) 
-//	NEWLOC = LOC
-//	GOTO 2
-//
-//C  SPECIAL MOTIONS COME HERE.  LABELLING CONVENTION: STATEMENT NUMBERS NNNXX
-//C  (XX = 00-99)  ARE USED FOR SPECIAL CASE NUMBER NNN (NNN = 301-500) .
-//
-//30000	NEWLOC = NEWLOC-300
-//	GOTO (30100,30200,30300) NEWLOC
-//	CALL BUG(20) 
-//
-//C  TRAVEL 301.  PLOVER-ALCOVE PASSAGE.  CAN CARRY ONLY EMERALD.  NOTE: TRAVEL
-//C  TABLE MUST INCLUDE "USELESS" ENTRIES GOING THROUGH PASSAGE, WHICH CAN NEVER
-//C  BE USED FOR ACTUAL MOTION, BUT CAN BE SPOTTED BY "GO BACK".
-//
-//30100	NEWLOC = 99+100-LOC
-//	if (HOLDNG == 0 || (HOLDNG == 1 && TOTING(EMRALD) ) ) GOTO 2
-//	NEWLOC = LOC
-//	CALL RSPEAK(117) 
-//	GOTO 2
-//
-//C  TRAVEL 302.  PLOVER TRANSPORT.  DROP THE EMERALD (ONLY USE SPECIAL TRAVEL IF
-//C  TOTING IT) , SO HE'S FORCED TO USE THE PLOVER-PASSAGE TO GET IT OUT.  HAVING
-//C  DROPPED IT, GO BACK AND PRETEND HE WASN'T CARRYING IT AFTER ALL.
-//
-//30200	CALL DROP(EMRALD,LOC) 
-//	GOTO 12
-//
-//C  TRAVEL 303.  TROLL BRIDGE.  MUST BE DONE ONLY AS SPECIAL MOTION SO THAT
-//C  DWARVES WON'T WANDER ACROSS AND ENCOUNTER THE BEAR.  (THEY WON'T FOLLOW THE
-//C  PLAYER THERE BECAUSE THAT REGION IS FORBIDDEN TO THE PIRATE.)   IF
-//C  PROP[TROLL] = 1, HE'S CROSSED SINCE PAYING, SO STEP OUT AND BLOCK HIM.
-//C  (STANDARD TRAVEL ENTRIES CHECK FOR PROP[TROLL] = 0.)   SPECIAL STUFF FOR BEAR.
-//
-//30300	if (PROP[TROLL] ! =  1) GOTO 30310
-//	CALL PSPEAK(TROLL,1) 
-//	PROP[TROLL] = 0
-//	CALL MOVE(TROLL2,0) 
-//	CALL MOVE(TROLL2+100,0) 
-//	CALL MOVE(TROLL,PLAC[TROLL]) 
-//	CALL MOVE(TROLL+100,FIXD[TROLL]) 
-//	CALL JUGGLE(CHASM) 
-//	NEWLOC = LOC
-//	GOTO 2
-//
-//30310	NEWLOC = PLAC[TROLL]+FIXD[TROLL]-LOC
-//	if (PROP[TROLL] == 0) PROP[TROLL] = 1
-//	if ( !TOTING(BEAR) ) GOTO 2
-//	CALL RSPEAK(162) 
-//	PROP[CHASM] = 1
-//	PROP[TROLL] = 2
-//	CALL DROP(BEAR,NEWLOC) 
-//	FIXED[BEAR] = -1
-//	PROP[BEAR] = 3
-//	if (PROP[SPICES] < 0) TALLY2 = TALLY2+1
-//	OLDLC2 = NEWLOC
-//	GOTO 99
-//
-//C  END OF SPECIALS.
-//
-//C  HANDLE "GO BACK".  LOOK FOR VERB WHICH GOES FROM LOC TO OLDLOC, OR TO OLDLC2
-//C  IF OLDLOC HAS FORCED-MOTION.  K2 SAVES ENTRY -> FORCED LOC -> PREVIOUS LOC.
-//
-//20	K = OLDLOC
-//	if (FORCED(K) ) K = OLDLC2
-//	OLDLC2 = OLDLOC
-//	OLDLOC = LOC
-//	K2 = 0
-//	if (K ! =  LOC) GOTO 21
-//	CALL RSPEAK(91) 
-//	GOTO 2
-//
-//21	LL = (Math.abs(TRAVEL[KK]) /1000) % 1000;
-//	if (LL == K) GOTO 25
-//	if (LL > 300) GOTO 22
-//	J = KEY[LL]
-//	if (FORCED(LL)  && (Math.abs(TRAVEL[J]) /1000) % 1000  == K) K2 = KK
-//22	if (TRAVEL[KK] < 0) GOTO 23
-//	KK = KK+1
-//	GOTO 21
-//
-//23	KK = K2
-//	if (KK ! =  0) GOTO 25
-//	CALL RSPEAK(140) 
-//	GOTO 2
-//
-//25	K = Math.abs(TRAVEL[KK]) % 1000; 
-//	KK = KEY[LOC]
-//	GOTO 9
-//
-//C  LOOK.  CAN'T GIVE MORE DETAIL.  PRETEND IT WASN'T DARK (THOUGH IT MAY "NOW"
-//C  BE DARK)  SO HE WON'T FALL INTO A PIT WHILE STARING INTO THE GLOOM.
-//
-//30	if (DETAIL < 3) CALL RSPEAK(15) 
-//	DETAIL = DETAIL+1
-//	WZDARK =  false
-//	ABB[LOC] = 0
-//	GOTO 2
-//
-//C  CAVE.  DIFFERENT MESSAGES DEPENDING ON WHETHER ABOVE GROUND.
-//
-//40	if (LOC < 8) CALL RSPEAK(57) 
-//	if (LOC >=  8) CALL RSPEAK(58) 
-//	GOTO 2
-//
-//C  NON-APPLICABLE MOTION.  VARIOUS MESSAGES DEPENDING ON WORD GIVEN.
-//
-//50	SPK = 12
-//	if (K >=  43 && K <=  50) SPK = 9
-//	if (K == 29 || K == 30) SPK = 9
-//	if (K == 7 || K == 36 || K == 37) SPK = 10
-//	if (K == 11 || K == 19) SPK = 11
-//	if (VERB == FIND || VERB == INVENT) SPK = 59
-//	if (K == 62 || K == 65) SPK = 42
-//	if (K == 17) SPK = 80
-//	CALL RSPEAK(SPK) 
-//	GOTO 2
+
+	
 //C  "YOU'RE DEAD, JIM."
 //C
 //C  IF THE CURRENT LOC IS ZERO, IT MEANS THE CLOWN GOT HIMSELF KILLED.  WE'LL
@@ -1756,7 +1546,7 @@ function label99dead() { }
 // 8000
 // RANDOM INTRANSITIVE VERBS COME HERE.  CLEAR OBJ JUST IN CASE (SEE "ATTACK") .
 function sayWhat() {
-	out(word1 + "What?");
+	out(word1 + " what?");
 	OBJ = 0;
 	return false;
 	// return to 'check hints' (2600)
@@ -1842,8 +1632,6 @@ function actionTake() {
 	if (OBJ == BOTTLE && K != 0) PLACE[K] = -1;
 	RSPEAK(54); /* OK */
 	return true;
-
-	
 }
 
 
@@ -1938,70 +1726,89 @@ function actionSay() {
 }
 
 function actionLockUnlock() {
-//8040	SPK = 28
-//	if (HERE(CLAM) ) OBJ = CLAM
-//	if (HERE(OYSTER) ) OBJ = OYSTER
-//	if (AT(DOOR) ) OBJ = DOOR
-//	if (AT(GRATE) ) OBJ = GRATE
-//	if (OBJ ! =  0 && HERE(CHAIN) ) GOTO 8000
-//	if (HERE(CHAIN) ) OBJ = CHAIN
-//	if (OBJ == 0) GOTO 2011
-//
-//C  LOCK, UNLOCK OBJECT.  SPECIAL STUFF FOR OPENING CLAM/OYSTER AND FOR CHAIN.
-//
-//9040	if (OBJ == CLAM || OBJ == OYSTER) GOTO 9046
-//	if (OBJ == DOOR) SPK = 111
-//	if (OBJ == DOOR && PROP[DOOR] == 1) SPK = 54
-//	if (OBJ == CAGE) SPK = 32
-//	if (OBJ == KEYS) SPK = 55
-//	if (OBJ == GRATE || OBJ == CHAIN) SPK = 31
-//	if (SPK ! =  31 ||  !HERE(KEYS) ) GOTO 2011
-//	if (OBJ == CHAIN) GOTO 9048
-//	if ( !CLOSNG) GOTO 9043
-//	K = 130
-//	if ( !PANIC) CLOCK2 = 15
-//	PANIC =  true
-//	GOTO 2010
-//
-//9043	K = 34+PROP[GRATE]
-//	PROP[GRATE] = 1
-//	if (VERB == LOCK) PROP[GRATE] = 0
-//	K = K+2*PROP[GRATE]
-//	GOTO 2010
-//
-//C  CLAM/OYSTER.
-//9046	K = 0
-//	if (OBJ == OYSTER) K = 1
-//	SPK = 124+K
-//	if (TOTING(OBJ) ) SPK = 120+K
-//	if ( !TOTING(TRIDNT) ) SPK = 122+K
-//	if (VERB == LOCK) SPK = 61
-//	if (SPK ! =  124) GOTO 2011
-//	CALL DSTROY(CLAM) 
-//	CALL DROP(OYSTER,LOC) 
-//	CALL DROP(PEARL,105) 
-//	GOTO 2011
-//
-//C  CHAIN.
-//9048	if (VERB == LOCK) GOTO 9049
-//	SPK = 171
-//	if (PROP[BEAR] == 0) SPK = 41
-//	if (PROP[CHAIN] == 0) SPK = 37
-//	if (SPK ! =  171) GOTO 2011
-//	PROP[CHAIN] = 0
-//	FIXED[CHAIN] = 0
-//	if (PROP[BEAR] ! =  3) PROP[BEAR] = 2
-//	FIXED[BEAR] = 2-PROP[BEAR]
-//	GOTO 2011
-//
-//9049	SPK = 172
-//	if (PROP[CHAIN] ! =  0) SPK = 34
-//	if (LOC ! =  PLAC[CHAIN]) SPK = 173
-//	if (SPK ! =  172) GOTO 2011
-//	PROP[CHAIN] = 2
-//	if (TOTING(CHAIN) ) CALL DROP(CHAIN,LOC) 
-//	FIXED[CHAIN] = -1
-//	GOTO 2011
+	SPK = 28;
+	if (HERE(CLAM)) OBJ = CLAM;
+	if (HERE(OYSTER)) OBJ = OYSTER;
+	if (AT(DOOR)) OBJ = DOOR;
+	if (AT(GRATE) ) OBJ = GRATE;
+	if (OBJ !=  0 && HERE(CHAIN)) return false;
+	if (HERE(CHAIN) ) OBJ = CHAIN;
+	if (OBJ == 0) {
+		RSPEAK(SPK);
+		return true;
+	}
+
+// LOCK, UNLOCK OBJECT.  SPECIAL STUFF FOR OPENING CLAM/OYSTER AND FOR CHAIN.
+	if (OBJ == CLAM || OBJ == OYSTER) { // CLAM/OYSTER.
+		K = 0;
+		if (OBJ == OYSTER) K = 1;
+		SPK = 124 + K;
+		if (TOTING(OBJ)) SPK = 120 + K;
+		if (!TOTING(TRIDNT)) SPK = 122 + K;
+		if (VERB == LOCK) SPK = 61;
+		if (SPK != 124) {
+			RSPEAK(SPK);
+			return true;
+		}
+		DSTROY(CLAM);
+		DROP(OYSTER,LOC);
+		DROP(PEARL,105);
+		RSPEAK(SPK);
+		return true;
+	}
+	if (OBJ == DOOR) SPK = 111;
+	if (OBJ == DOOR && PROP[DOOR] == 1) SPK = 54;
+	if (OBJ == CAGE) SPK = 32;
+	if (OBJ == KEYS) SPK = 55;
+	if (OBJ == GRATE || OBJ == CHAIN) SPK = 31;
+	if (SPK != 31 || !HERE(KEYS)) {
+		RSPEAK(SPK);
+		return true;
+	}
+	if (OBJ == CHAIN) { // CHAIN.
+		if (VERB == LOCK) {
+			SPK = 172;
+			if (PROP[CHAIN] !=  0) SPK = 34;
+			if (LOC != PLAC[CHAIN]) SPK = 173;
+			if (SPK != 172) {
+				RSPEAK(SPK);
+				return true;
+			}
+			PROP[CHAIN] = 2;
+			if (TOTING(CHAIN)) DROP(CHAIN,LOC);
+			FIXED[CHAIN] = -1;
+			RSPEAK(SPK);
+			return true;
+		}
+		else {
+			SPK = 171;
+			if (PROP[BEAR] == 0) SPK = 41;
+			if (PROP[CHAIN] == 0) SPK = 37;
+			if (SPK != 171) {
+				RSPEAK(SPK);
+				return true;
+			}
+			PROP[CHAIN] = 0;
+			FIXED[CHAIN] = 0;
+			if (PROP[BEAR] !=  3) PROP[BEAR] = 2;
+			FIXED[BEAR] = 2-PROP[BEAR];
+			RSPEAK(SPK);
+			return true;
+		}
+	}
+	if (!CLOSNG) {
+		K = 34 + PROP[GRATE];
+		PROP[GRATE] = 1;
+		if (VERB == LOCK) PROP[GRATE] = 0;
+		K = K + 2*PROP[GRATE];
+		RSPEAK(K);
+		return true;
+	}
+	K = 130;
+	if (!PANIC) CLOCK2 = 15;
+	PANIC = true;
+	RSPEAK(K);
+	return true;
 }
 
 function actionLightOn() {
