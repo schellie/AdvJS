@@ -394,29 +394,25 @@ function processMove() {
 		firstIndex = KEY[LOC], // start index into TRAVEL table for this location
 		nextLoc,
 		newLoc = LOC;
-	
-	//NEWLOC = LOC;
+
 	if (firstIndex == 0) throw 'LOCATION HAS NO TRAVEL ENTRIES'; // BUG(26)
-	
-
-//	if (WD1 == 'WEST') {
-//		IWEST++;
-//		if (IWEST == 10) RSPEAK(17); /* If you prefer, simply type w rather than west. */
-//	}
-//	if (WD1 == 'ENTER' && (WD2 == 'STREA' || WD2 == 'WATER')) {
-//		if (LIQLOC(LOC) == WATER) RSPEAK(70); /* Your feet are now wet. */
-//		else RSPEAK(43); /* Where? */
-//		return;
-//	}
-//	if ((WD1 == 'WATER' || WD1 == 'OIL') && (WD2 == 'PLANT' || WD2 == 'DOOR')) {
-//		if (AT[VOCAB(WD2, 1)]) WD2 = 'POUR';
-//	}
-//	//	if (WD1 == 'ENTER' && WD2 !=  0) GOTO 2800
-
 	if (commandVerb == NULL) return;
 	if (commandVerb == BACK) { goBack(); return; } // 20
 	if (commandVerb == LOOK) { look(); return; } // 30
 	if (commandVerb == CAVE) { cave(); return; } // 40
+	if (WD1 == 'WEST') {
+		IWEST++;
+		if (IWEST == 10) RSPEAK(17); /* If you prefer, simply type w rather than west. */
+	}
+	if (WD1 == 'ENTER' && (WD2 == 'STREA' || WD2 == 'WATER')) {
+		if (LIQLOC(LOC) == WATER) RSPEAK(70); /* Your feet are now wet. */
+		else RSPEAK(43); /* Where? */
+		return;
+	}
+//	if ((WD1 == 'WATER' || WD1 == 'OIL') && (WD2 == 'PLANT' || WD2 == 'DOOR')) {
+//		if (AT[VOCAB(WD2, 1)]) WD2 = 'POUR';
+//	}
+//	//	if (WD1 == 'ENTER' && WD2 !=  0) GOTO 2800
 
 	OLDLC2 = OLDLOC;
 	OLDLOC = LOC;
@@ -450,7 +446,7 @@ function processMove() {
 	newLoc = destination % 1000;
 	
 	if (newLoc > 300) {
-		if (newLoc <= 500) newLoc = specialMotions(newLoc);
+		if (newLoc <= 500) newLoc = specialMotions(newLoc, index);
 		else {
 			RSPEAK(newLoc - 500);
 			newLoc = LOC;
@@ -480,9 +476,10 @@ function checkCondition(condition) {
 /**
  * specialMotions
  * @param newLoc
+ * @param index
  * @returns
  */
-function specialMotions(newLoc) {
+function specialMotions(newLoc, index) {
 	
 	// TRAVEL 301.  PLOVER-ALCOVE PASSAGE.  CAN CARRY ONLY EMERALD.  NOTE: TRAVEL
 	// TABLE MUST INCLUDE "USELESS" ENTRIES GOING THROUGH PASSAGE, WHICH CAN NEVER
@@ -501,8 +498,13 @@ function specialMotions(newLoc) {
 	// TOTING IT) , SO HE'S FORCED TO USE THE PLOVER-PASSAGE TO GET IT OUT.  HAVING
 	// DROPPED IT, GO BACK AND PRETEND HE WASN'T CARRYING IT AFTER ALL.
 	if (newLoc == 302) {
+		var nextLoc,
+			destination = int(TRAVEL[index]/1000);
 		DROP(EMRALD,LOC);
-		newLoc = 0; // GOTO 12 = find travel option
+		do { // find travel option
+            if (TRAVEL[index] < 0) throw 'CONDITIONAL TRAVEL ENTRY WITH NO ALTERNATIVE';
+            nextLoc = int(Math.abs(TRAVEL[++index])/1000);
+        } while(nextLoc == destination);
 		return newLoc;
 	}
 	// TRAVEL 303.  TROLL BRIDGE.  MUST BE DONE ONLY AS SPECIAL MOTION SO THAT
@@ -544,8 +546,6 @@ function specialMotions(newLoc) {
 	throw 'SPECIAL TRAVEL (500>L>300) EXCEEDS GOTO LIST';
 }
 
-	
-	
 //C  HANDLE "GO BACK".  LOOK FOR VERB WHICH GOES FROM LOC TO OLDLOC, OR TO OLDLC2
 //C  IF OLDLOC HAS FORCED-MOTION.  K2 SAVES ENTRY -> FORCED LOC -> PREVIOUS LOC.
 //
@@ -553,8 +553,56 @@ function specialMotions(newLoc) {
  * HANDLE "GO BACK"
  * 20
  */
-function goBack() {
+function goBack() { // check 
+	var destination, // entry from TRAVEL array
+		validMove = false, // true when entry found in table
+		index, 
+		firstIndex = KEY[LOC], // start index into TRAVEL table for this location
+		backLoc = OLDLOC;
 	
+	if (FORCED[backLoc]) backLoc = OLDLC2;
+	OLDLC2 = OLDLOC;
+	OLDLOC = LOC;
+	
+	K2 = 0;
+	LL = 0;
+	
+	if (backLoc == LOC) {
+		RSPEAK(91); /* Sorry, but I no longer seem to remember how it was you got here. */
+		return;
+	}
+	
+	// find traveloption
+    for (index = firstIndex; TRAVEL[index] > 0; index++) {
+    	destination = int(Math.abs(TRAVEL[index]/1000)) % 1000;
+        if (destination == backLoc) break;
+        if (destination > 300) continue;
+        
+    }/*
+	else {
+		LL = int(Math.abs(TRAVEL[KK])/1000) % 1000;
+		if (LL == K) {
+			K = Math.abs(TRAVEL[KK]) % 1000; 
+			KK = KEY[LOC];
+//			GOTO 9
+		}
+		if (LL > 300) {
+			if (TRAVEL[KK] < 0) {
+				KK = K2;
+				if (KK !=  0) {
+					K = Math.abs(TRAVEL[KK]) % 1000; 
+					KK = KEY[LOC];
+//					GOTO 9
+				}
+				RSPEAK(140);
+//				GOTO 2
+			}
+			KK = KK+1;
+//			GOTO 21
+		}
+		J = KEY[LL];
+		if (FORCED(LL)  && (Math.abs(TRAVEL[J]) /1000) % 1000  == K) K2 = KK;
+	}*/
 }
 //20	K = OLDLOC
 //	if (FORCED(K) ) K = OLDLC2
@@ -598,12 +646,7 @@ function look() {
 	ABB[LOC] = 0;
 	return;
 }
-//30	if (DETAIL < 3) CALL RSPEAK(15) 
-//	DETAIL = DETAIL+1
-//	WZDARK =  false
-//	ABB[LOC] = 0
-//	GOTO 2
-//
+
 //C  CAVE.  DIFFERENT MESSAGES DEPENDING ON WHETHER ABOVE GROUND.
 //
 /**
@@ -618,23 +661,6 @@ function cave() {
 	return;
 }
 	
-//40	if (LOC < 8) CALL RSPEAK(57) 
-//	if (LOC >=  8) CALL RSPEAK(58) 
-//	GOTO 2
-//
-//C  NON-APPLICABLE MOTION.  VARIOUS MESSAGES DEPENDING ON WORD GIVEN.
-//
-//50	SPK = 12
-//	if (K >=  43 && K <=  50) SPK = 9
-//	if (K == 29 || K == 30) SPK = 9
-//	if (K == 7 || K == 36 || K == 37) SPK = 10
-//	if (K == 11 || K == 19) SPK = 11
-//	if (VERB == FIND || VERB == INVENT) SPK = 59
-//	if (K == 62 || K == 65) SPK = 42
-//	if (K == 17) SPK = 80
-//	CALL RSPEAK(SPK) 
-//	GOTO 2
-
 /**
  * NON-APPLICABLE MOTION.  VARIOUS MESSAGES DEPENDING ON WORD GIVEN.
  * @param motion
