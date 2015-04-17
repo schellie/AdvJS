@@ -650,7 +650,7 @@ function processAction(verb) {
 	case 7: // ON	
 		action = actionLightOn; break;
 	case 8: // OFF	
-		action = actionLightOff; break;
+		action = actionLightOff; break; // LAMP should be ignored, OFF works ok
 	case 9: // WAVE	
 		action = actionWave; break;
 	case 10: // CALM	
@@ -1548,7 +1548,7 @@ function label99dead() { }
 function sayWhat() {
 	out(word1 + " what?");
 	OBJ = 0;
-	return false;
+	return true;
 	// return to 'check hints' (2600)
 }
 
@@ -1722,29 +1722,41 @@ function actionSay() {
 //	OBJ = 0
 //	GOTO 2630
 //
-//C  LOCK, UNLOCK, NO OBJECT GIVEN.  ASSUME VARIOUS THINGS IF PRESENT.
+
 }
 
+/**
+ * actionLockUnlock - 
+ * @returns {Boolean}
+ */
 function actionLockUnlock() {
-	SPK = 28;
-	if (HERE(CLAM)) OBJ = CLAM;
-	if (HERE(OYSTER)) OBJ = OYSTER;
-	if (AT(DOOR)) OBJ = DOOR;
-	if (AT(GRATE) ) OBJ = GRATE;
-	if (OBJ !=  0 && HERE(CHAIN)) return false;
-	if (HERE(CHAIN) ) OBJ = CHAIN;
+	// LOCK, UNLOCK, NO OBJECT GIVEN.  ASSUME VARIOUS THINGS IF PRESENT.
 	if (OBJ == 0) {
-		RSPEAK(SPK);
-		return true;
-	}
+		if (HERE(CLAM)) OBJ = CLAM;
+		if (HERE(OYSTER)) OBJ = OYSTER;
+		if (AT(DOOR)) OBJ = DOOR;
+		if (AT(GRATE)) OBJ = GRATE;
+		if (OBJ != 0 && HERE(CHAIN)) return sayWhat();
+		if (HERE(CHAIN)) OBJ = CHAIN;
+		if (OBJ == 0) {
+			RSPEAK(28); /* There is nothing here with a lock! */
+			return true;
+		}
+	}	
 
-// LOCK, UNLOCK OBJECT.  SPECIAL STUFF FOR OPENING CLAM/OYSTER AND FOR CHAIN.
+	// LOCK, UNLOCK OBJECT.  SPECIAL STUFF FOR OPENING CLAM/OYSTER AND FOR CHAIN.
 	if (OBJ == CLAM || OBJ == OYSTER) { // CLAM/OYSTER.
 		K = 0;
 		if (OBJ == OYSTER) K = 1;
 		SPK = 124 + K;
-		if (TOTING(OBJ)) SPK = 120 + K;
-		if (!TOTING(TRIDNT)) SPK = 122 + K;
+        /* A glistening pearl falls out of the clam and rolls away.  
+           Goodness, this must really be an oyster.  
+           (I never was very good at identifying bivalves.)  
+           Whatever it is, it has now snapped shut again.*/
+        /* The oyster creaks open, revealing nothing but oyster inside. It
+           promptly snaps shut again.*/
+		if (TOTING(OBJ)) SPK = 120 + K; /* I advise you to put down the clam/oyster before opening it. */
+		if (!TOTING(TRIDNT)) SPK = 122 + K; /* You don't have anything strong enough to open the clam/oyster.*/
 		if (VERB == LOCK) SPK = 61;
 		if (SPK != 124) {
 			RSPEAK(SPK);
@@ -1756,11 +1768,11 @@ function actionLockUnlock() {
 		RSPEAK(SPK);
 		return true;
 	}
-	if (OBJ == DOOR) SPK = 111;
-	if (OBJ == DOOR && PROP[DOOR] == 1) SPK = 54;
-	if (OBJ == CAGE) SPK = 32;
-	if (OBJ == KEYS) SPK = 55;
-	if (OBJ == GRATE || OBJ == CHAIN) SPK = 31;
+	if (OBJ == DOOR) SPK = 111; /* The door is extremely rusty and refuses to open.*/
+	if (OBJ == DOOR && PROP[DOOR] == 1) SPK = 54; /* OK */
+	if (OBJ == CAGE) SPK = 32; /* It has no lock.*/
+	if (OBJ == KEYS) SPK = 55; /* You can't unlock the keys.*/
+	if (OBJ == GRATE || OBJ == CHAIN) SPK = 31; /* You have no keys!*/
 	if (SPK != 31 || !HERE(KEYS)) {
 		RSPEAK(SPK);
 		return true;
@@ -1768,22 +1780,23 @@ function actionLockUnlock() {
 	if (OBJ == CHAIN) { // CHAIN.
 		if (VERB == LOCK) {
 			SPK = 172;
-			if (PROP[CHAIN] !=  0) SPK = 34;
-			if (LOC != PLAC[CHAIN]) SPK = 173;
-			if (SPK != 172) {
+			if (PROP[CHAIN] !=  0) SPK = 34; /* It was already locked.*/
+			if (LOC != PLAC[CHAIN]) SPK = 173; /* There is nothing here to which the chain can be locked.*/
+			if (SPK != 172) { 
 				RSPEAK(SPK);
 				return true;
 			}
 			PROP[CHAIN] = 2;
 			if (TOTING(CHAIN)) DROP(CHAIN,LOC);
 			FIXED[CHAIN] = -1;
-			RSPEAK(SPK);
+			RSPEAK(SPK); /* The chain is now locked.*/
 			return true;
 		}
 		else {
 			SPK = 171;
-			if (PROP[BEAR] == 0) SPK = 41;
-			if (PROP[CHAIN] == 0) SPK = 37;
+			if (PROP[BEAR] == 0) SPK = 41; /* There is no way to get past the bear to unlock the chain, 
+            which is probably just as well.*/
+			if (PROP[CHAIN] == 0) SPK = 37; /* It was already unlocked.*/
 			if (SPK != 171) {
 				RSPEAK(SPK);
 				return true;
@@ -1792,7 +1805,7 @@ function actionLockUnlock() {
 			FIXED[CHAIN] = 0;
 			if (PROP[BEAR] !=  3) PROP[BEAR] = 2;
 			FIXED[BEAR] = 2-PROP[BEAR];
-			RSPEAK(SPK);
+			RSPEAK(SPK); /* The chain is now unlocked.*/
 			return true;
 		}
 	}
@@ -1808,29 +1821,36 @@ function actionLockUnlock() {
 	if (!PANIC) CLOCK2 = 15;
 	PANIC = true;
 	RSPEAK(K);
+	// A mysterious recorded voice groans into life and announces:
+	//  "This exit is closed.  Please leave via main office."
 	return true;
 }
 
+/**
+ * actionLightOn - LIGHT LAMP
+ */
 function actionLightOn() {
-//C  LIGHT LAMP
-//
-//9070	if ( !HERE(LAMP) ) GOTO 2011
-//	SPK = 184
-//	if (LIMIT < 0) GOTO 2011
-//	PROP[LAMP] = 1
-//	CALL RSPEAK(39) 
-//	if (WZDARK) GOTO 2000
-//	GOTO 2012
+	if (!HERE(LAMP)) return false;
+	SPK = 184;
+	if (LIMIT < 0) {
+		RSPEAK(SPK); /* Your lamp has run out of power.*/
+		return true;
+	}
+	PROP[LAMP] = 1;
+	RSPEAK(39); /* Your lamp is now on.*/
+	if (WZDARK) describeLocation();
+	return true;
 }
 
+/**
+ * actionLightOff - LAMP OFF
+ */
 function actionLightOff() {
-//C  LAMP OFF
-//
-//9080	if ( !HERE(LAMP) ) GOTO 2011
-//	PROP[LAMP] = 0
-//	CALL RSPEAK(40) 
-//	if (DARK(0) ) CALL RSPEAK(16) 
-//	GOTO 2012
+	if (!HERE(LAMP)) return false;
+	PROP[LAMP] = 0;
+	RSPEAK(40); /* Your lamp is now off.*/
+	if (DARK()) RSPEAK(16); /* It is now pitch dark. If you proceed you will likely fall into a pit.*/
+	return true;
 }
 
 function actionWave() {
