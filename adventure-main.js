@@ -956,7 +956,8 @@ function initDatabase() {
 	// FINALLY, SINCE WE'RE CLEARLY SETTING THINGS UP FOR THE FIRST TIME...
 	POOF();
 
-    
+    // additionally start conversion to classes
+	convert();
 }
 
 // SECTIONS 1, 2, 5, 6, 10, 12.  READ MESSAGES AND SET UP POINTERS.
