@@ -3,13 +3,13 @@
  */
 function Exit(action, newLocation) {
 	this.action = action; // VERB
-	this.target = newLocation; // Y
+	this.target = newLocation%1000; // Y
 	//M=Y/1000
 	//N=Y MOD 1000
 	//m = Math.floor(newLocation/1000);
 	//n = newLocation % 1000;
 	
-	this.condition = Math.floor(newLocation/1000); 
+	this.condition = int(newLocation/1000); 
 	//C		IF M=0		IT'S UNCONDITIONAL.
 	//C		IF 0<M<100	IT IS DONE WITH M% PROBABILITY.
 	//C		IF M=100	UNCONDITIONAL, BUT FORBIDDEN TO DWARVES.

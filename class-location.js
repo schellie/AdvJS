@@ -5,20 +5,37 @@ function Location(id, long) {
 	this.id = id;
 	this.longDescription = long;
 	this.shortDescription;
-	this.itemList = [];
-	this.exits = [];
+	this.items = []; // dynamic list, drop & take
+	this.exits = []; // static list
 	this.props = {forced:false, light:false, water:false, oil:false, pirate:false, 
 		cave:false, bird:false, snake:false, maze:false, dkroom:false, witt:false};
 }
+
+Location.prototype.setLong = function(description) {
+	this.longDescription = description;
+};
+
+Location.prototype.setShort = function(description) {
+	this.shortDescription = description;
+};
+
+Location.prototype.addExit = function(exit) {
+	this.exits.push(exit);
+};
+
+Location.prototype.drop = function(item) {
+	this.items.push(item);
+};
+
+Location.prototype.take = function(item) {
+	var index = this.items.indexOf(item);
+	this.items.splice(index, 1);
+};
+
 Location.prototype.look = function() {
 	return this.longDescription;
 };
-Location.prototype.addLong = function(description) {
-	this.longDescription = description;
-};
-Location.prototype.addShort = function(description) {
-	this.shortDescription = description;
-};
+
 Location.prototype.addProp = function(prop) { // this is initialisation only
 	// prop is in range 0-9
 	if (prop == 0) this.props.light = true; // 0 = light
@@ -38,13 +55,8 @@ Location.prototype.addProp = function(prop) { // this is initialisation only
 Location.prototype.hasProp = function(prop) { 
 	return this.props[prop];
 };
-Location.prototype.drop = function(item) {
-	this.itemList.push(item);
-};
-Location.prototype.take = function(item) {
-	var index = this.itemList.indexOf(item);
-	this.itemList.splice(index, 1);
-};
+
+
 Location.prototype.countItems = function() {
 	return this.itemList.length;
 };

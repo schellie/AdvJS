@@ -17,9 +17,11 @@ function Command(input) {
 	this.verbType = int(this.cmd1/1000); // make integer
 	this.obj = this.cmd2 % 1000;
 } 
+
 Command.prototype.getVerb = function() {
 	return this.verb;
 };
+
 Command.prototype.getObj = function() {
 	return this.obj;
 };

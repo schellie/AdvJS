@@ -1,11 +1,14 @@
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
 <head>
     <title>Adventure</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <link href="index.css" rel="stylesheet" />
 </head>
 
-<body class="body"><br />
+<body class="body" onload="startup()">
+<br />
 <div class="cave">
     <table>
         <tr>
@@ -21,7 +24,7 @@
 			</table>
             <textarea rows="20" cols="70" id="displayText" readonly onmouseover="" style="cursor: pointer;"></textarea>
             <div class="clear"></div>
-            <input type="text" id="commandLine"></input>
+            <input type="text" id="commandLine">
             <div class="clear"></div>
         </td>
         </tr>
@@ -29,12 +32,16 @@
 </div> 
 <script type="text/javascript" src="adventure-readdata.js"></script>
 <script type="text/javascript" src="adventure-functions.js"></script>
+<script type="text/javascript" src="adventure-data-utils.js"></script>
 <script type="text/javascript" src="adventure-main.js"></script>
-<script type="text/javascript" src="adventure-convert.js"></script>
+<script type="text/javascript" src="class-command.js"></script>
 <script type="text/javascript" src="class-location.js"></script>
 <script type="text/javascript" src="class-item.js"></script>
 <script type="text/javascript" src="class-exit.js"></script>
 <script type="text/javascript" src="class-player.js"></script>
 <script type="text/javascript" src="class-word.js"></script>
-<script type="text/javascript" src="class-command.js"></script>
+<script type="text/javascript" src="adventure-convert.js"></script>
+
+
 </body>
+</html>
