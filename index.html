@@ -5,6 +5,24 @@
     <title>Adventure</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <link href="index.css" rel="stylesheet" />
+    
+    <script type="text/javascript" src="adventure-readdata.js"></script>
+	<script type="text/javascript" src="adventure-functions.js"></script>
+	<script type="text/javascript" src="adventure-data-utils.js"></script>
+	<script type="text/javascript" src="adventure-main.js"></script>
+	<script type="text/javascript" src="class-command.js"></script>
+	<script type="text/javascript" src="class-location.js"></script>
+	<script type="text/javascript" src="class-item.js"></script>
+	<script type="text/javascript" src="class-exit.js"></script>
+	<script type="text/javascript" src="class-player.js"></script>
+	<script type="text/javascript" src="class-word.js"></script>
+	<script type="text/javascript" src="adventure-convert.js"></script>
+	<script>
+	function showRText(e) {
+		var index = parseInt(e.parentNode.nextSibling.innerHTML);
+		alert(getMessage(RTEXT[index]));
+	}
+	</script>
 </head>
 
 <body class="body" onload="startup()">
@@ -28,20 +46,215 @@
             <div class="clear"></div>
         </td>
         </tr>
-	</table> 
-</div> 
-<script type="text/javascript" src="adventure-readdata.js"></script>
-<script type="text/javascript" src="adventure-functions.js"></script>
-<script type="text/javascript" src="adventure-data-utils.js"></script>
-<script type="text/javascript" src="adventure-main.js"></script>
-<script type="text/javascript" src="class-command.js"></script>
-<script type="text/javascript" src="class-location.js"></script>
-<script type="text/javascript" src="class-item.js"></script>
-<script type="text/javascript" src="class-exit.js"></script>
-<script type="text/javascript" src="class-player.js"></script>
-<script type="text/javascript" src="class-word.js"></script>
-<script type="text/javascript" src="adventure-convert.js"></script>
+	</table>
+</div>
+<div class="clear"></div>
+<div>
+<table>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>001</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>002</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>003</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>004</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>005</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>006</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>007</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>008</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>009</td><td>Def. resp. Compass directions</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>010</td><td>Def. resp. forward, left, right</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>011</td><td>Def. resp. out, in</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>012</td><td>Def. resp. for motion verbs</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>013</td><td>Def. resp. SUSPE (2030), QUIT (2018), SCORE (2024), HOURS (2031)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>014</td><td>Def. resp. CALM  (2010)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>015</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>016</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>017</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>018</td><td>Hint 5: Q (bird)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>019</td><td>Hint 5: A (bird)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>020</td><td>Hint 6: Q (snake)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>021</td><td>Hint 6: A (snake)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>022</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>023</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>024</td><td>Def. resp. CARRY (2001)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>025</td><td>Can't carry</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>026</td><td>Carry bird, holding rod</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>027</td><td>Carry bird, no cage</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>028</td><td>Open/close, no lock</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>029</td><td>Def. resp. THROW (2017), DROP (2002), POUR (2013)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>030</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>031</td><td>Open, no keys</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>032</td><td>Open cage</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>033</td><td>Def. resp. OPEN (2004), CLOSE (2006)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>034</td><td>Close, already closed</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>035</td><td>Close grate</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>036</td><td>Open grate</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>037</td><td>Open, already open</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>038</td><td>Def. resp. ON (2007), OFF (2008)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>039</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>040</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>041</td><td>Open chain, wild bear</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>042</td><td>Def. resp. XYZZY, PLUGH, WAVE (2009)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>043</td><td>Def. resp. WALK  (2011)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>044</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>045</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>046</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>047</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>048</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>049</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>050</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>051</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>052</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>053</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>054</td><td>Affirmative answer</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>055</td><td>Open keys</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>056</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>057</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>058</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>059</td><td>Def. resp. INVEN (2020), FIND (2019)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>060</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>061</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>062</td><td>Hint 4: Q (cave)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>063</td><td>Hint 4: A (cave)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>064</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>065</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>066</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>067</td><td>Def. resp. BLAST (2023)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>068</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>069</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>070</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>071</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>072</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>073</td><td>Def. resp. DRINK (2015)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>074</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>075</td><td>Def. resp. RUB (2016)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>076</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>077</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>078</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>079</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>080</td><td>Def. resp. crawl</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>081</td><td>Orbituary 1 killed</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>082</td><td>Orbituary 1 reïncarnated</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>083</td><td>Orbituary 2 killed</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>084</td><td>Orbituary 2 reïncarnated</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>085</td><td>Orbituary 3 killed</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>086</td><td>Orbituary 3 reïncarnated</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>087</td><td>Reserved: Orbituary 4 killed</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>088</td><td>Reserved: Orbituary 4 reïncarnated</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>089</td><td>Reserved: Orbituary 5 killed</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>090</td><td>Reserved: Orbituary 5 reïncarnated</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>091</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>092</td><td>Carry too much</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>093</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>094</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>095</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>096</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>097</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>098</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>099</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>100</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>101</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>102</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>103</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>104</td><td>Carry water/oil, no bottle</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>105</td><td>Carry water/oil, bottle full</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>106</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>107</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>108</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>109</td><td>Def. resp. FILL  (2022)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>110</td><td>Def. resp. ATTAC (2012), WAKE (2029), EAT (2014)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>111</td><td>Open door, fail</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>112</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>113</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>114</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>115</td><td>Carry plant</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>116</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>117</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>118</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>119</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>120</td><td>Open clam, holding</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>121</td><td>Open oyster, holding</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>122</td><td>Open clam, no trident</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>123</td><td>Open oyster, no trident</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>124</td><td>Open clam, ok</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>125</td><td>Open oyster, ok</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>126</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>127</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>128</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>129</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>130</td><td>Cave closed</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>131</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>132</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>133</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>134</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>135</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>136</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>137</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>138</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>139</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>140</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>141</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>142</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>143</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>144</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>145</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>146</td><td>Def. resp. BREAK (2028)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>147</td><td>Def. resp. FEE (2025)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>148</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>149</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>150</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>151</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>152</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>153</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>154</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>155</td><td>Def. resp. BRIEF (2026)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>156</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>157</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>158</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>159</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>160</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>161</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>162</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>163</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>164</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>165</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>166</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>167</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>168</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>169</td><td>Carry bear, chain locked</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>170</td><td>Carry chain, chain locked</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>171</td><td>Open chain, ok</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>172</td><td>Close chain, ok</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>173</td><td>Close chain, cannot</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>174</td><td>Def. resp. FEED (2021)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>175</td><td>Hint question</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>176</td><td>Hint 7: Q (maze)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>177</td><td>Hint 7: A (maze)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>178</td><td>Hint 8: Q (dark)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>179</td><td>Hint 8: A (dark)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>180</td><td>Hint 9: Q (witt)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>181</td><td>Hint 9: A (witt)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>182</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>183</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>184</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>185</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>186</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>187</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>188</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>189</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>190</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>191</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>192</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>193</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>194</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>195</td><td>Def. resp. READ (2027)</td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>196</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>197</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>198</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>199</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>200</td><td></td><td></td></tr>
+<tr><td><input type="button" value="i" onclick="showRText(this)" /></td><td>201</td><td></td><td></td></tr>
 
+</table>
+</div>
 
 </body>
 </html>

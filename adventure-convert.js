@@ -35,6 +35,22 @@ function isObjectEmpty(object) {
 		return true;
 	}
 }
+
+/**
+ * Read text from the LINES array
+ * @param index starting index to read
+ * @return string with (multi-line) message
+ */
+function getMessage(index) {
+	var start = index,
+		count = index,
+		text = '';
+	while (parseInt(LINES[count++]) == parseInt(LINES[start])) {
+		text += LINES[count-1].substr(8).trim() + '\n';
+	}
+	return text.slice(0,-1); // remove the very last '\n'
+}
+
 /**
  * Load current (classic) database into class structure and save as JSON
  */
@@ -43,26 +59,16 @@ function convert() {
 	var	text = '', // merged text for long descriptions
 		index;
 	
-	function getMessage(index) {
-		var start = index,
-			count = index,
-			text = '';
-		while (parseInt(LINES[count++]) == parseInt(LINES[start])) {
-			text += LINES[count-1].substr(8).trim() + '\n';
-		}
-		return text.slice(0,-1); // remove the very last '\n'
-	}
-	
 	// locations and their long descriptions
 	for (var lt in LTEXT) {
 		if (LTEXT[lt] == 0) break;
-		locations[parseInt(lt)] = new Location(parseInt(lt), getMessage(LTEXT[lt]));
+		locations[+lt] = new Location(+lt, getMessage(LTEXT[lt]));
 	}
 	
 	// short descriptions
 	for (var st in STEXT) {
 		if (STEXT[st] == 0) continue;
-		locations[parseInt(st)].setShort(getMessage(STEXT[st]));
+		locations[+st].setShort(getMessage(STEXT[st]));
 	}
 	
 	// travels
@@ -70,7 +76,7 @@ function convert() {
 		index = KEY[loc];
 		if (index == 0) continue;
 		while (true) {
-			locations[parseInt(loc)].addExit(
+			locations[+loc].addExit(
         		new Exit(Math.abs(TRAVEL[index])%1000, 
         				int(Math.abs(TRAVEL[index])/1000))
         		);
@@ -121,7 +127,7 @@ function convert() {
 	// responses (rtext)
 	for (var r in RTEXT) {
 		if (RTEXT[r] == 0) continue;
-		responses[parseInt(r)] = getMessage(RTEXT[r]); // remove the very last '\n'
+		responses[+r] = getMessage(RTEXT[r]); // remove the very last '\n'
 	}
 	//console.log(responses);
 	
@@ -139,7 +145,7 @@ function convert() {
 	// default response to CommandWord
 	for (var as in ACTSPK) {
 		if (RTEXT[ACTSPK[as]] == 0) continue;
-		var wrd = commandWords.filter(filterId(2000 + parseInt(as)));
+		var wrd = commandWords.filter(filterId(2000 + (+as)));
 		wrd[0].setResponse(getMessage(RTEXT[ACTSPK[parseInt(as)]]));
 	}
 	// default response for action verbs is '12'
@@ -153,9 +159,23 @@ function convert() {
 		if (cmd == 62 || cmd == 65) commandWords[act].setResponse(RTEXT[42]);
 		if (cmd == 17) commandWords[act].setResponse(RTEXT[80]);
 	}
-	console.log(commandWords);
+	//console.log(commandWords);
 	
-	
-	
+	// properties of locations
+	for (var c in COND) {
+		var loc = locations[+c];
+		if (COND[c] == 0) continue;
+		if (COND[c] & 1) loc.addProp(0); // light
+		if (COND[c] & 2) loc.addProp(1); // water
+		if (COND[c] & 4) loc.addProp(2); // liquid
+		if (COND[c] & 8) loc.addProp(3); // no pirate
+		if (COND[c] & 16) loc.addProp(4); // cave hint
+		if (COND[c] & 32) loc.addProp(5); // bird hint
+		if (COND[c] & 64) loc.addProp(6); // snake hint
+		if (COND[c] & 128) loc.addProp(7); // maze hint
+		if (COND[c] & 256) loc.addProp(8); // dark hint
+		if (COND[c] & 512) loc.addProp(9); // witt hint
+	}
+	//console.log(locations);
 	
 }

@@ -68,7 +68,7 @@ output#statusMoves {
     overflow: hidden;
 }
 
-input {
+input#commandLine {
 	width: 600px; // 555
     font-size: 12px;
     color: black;
