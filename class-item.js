@@ -2,12 +2,12 @@
  * Class Item
  */
 function Item(id, description) {
-	this.id = id;
+	this.id = id; // for reference (?)
 	this.description = description;
-	this.initial = [];
+	this.initial = []; // initial location, or locations for 2-sided items
 	this.currentStatus = 0;
-	this.statusMessage = [];
-	this.fixed = false; 
+	this.statusMessage = []; // array of status messages, currentStatus is index
+	this.fixed = false; // unmovable if true
 }
 
 Item.prototype.show = function() {
@@ -27,12 +27,12 @@ Item.prototype.setStatus = function(status) {
 };
 
 Item.prototype.setLocation = function(location, fixed) {
-	this.fixed = typeof fixed !== 'undefined' ? true : false;
+	this.fixed = (fixed != 0);
 	this.initial.push(location);
-	location.drop(this);
-	if (this.isFixed() && !isObjectEmpty(fixed)) {
+	locations[location].drop(this);
+	if (this.isFixed() && fixed > 0) {
 		this.initial.push(fixed);
-		fixed.drop(this);
+		locations[fixed].drop(this);
 	}
 };
 

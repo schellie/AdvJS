@@ -24,24 +24,6 @@ function filterId(id) {
 }
 
 /**
- * Returns true if specified object has no properties, false otherwise.
- * @author Slava Fomin II
- * @param object the object to check
- * @return true if object is empty
- */
-function isObjectEmpty(object) {
-	if ('object' !== typeof object) throw new Error('Object must be specified.');
-	if (null === object) return true;
-	if ('undefined' !== Object.keys) return (0 === Object.keys(object).length); // Using ECMAScript 5 feature.
-	else { // Using legacy compatibility mode.
-		for (var key in object) {
-			if (object.hasOwnProperty(key)) return false;
-		}
-		return true;
-	}
-}
-
-/**
  * Read text from the LINES array
  * @param index starting index to read
  * @return string with (multi-line) message
@@ -65,6 +47,7 @@ function convert() {
 		index;
 	
 	// locations and their long descriptions
+	locations[0] = new Location(0, 'You\'re dead');
 	for (var lt in LTEXT) {
 		if (LTEXT[lt] == 0) break;
 		locations[+lt] = new Location(+lt, getMessage(LTEXT[lt]));
@@ -78,6 +61,7 @@ function convert() {
 	
 	// travels
 	for (var loc in locations) {
+		if (loc == 0) continue;
 		index = KEY[loc];
 		if (index == 0) continue;
 		while (true) {
@@ -96,7 +80,7 @@ function convert() {
 		if (KTAB[w] < 0) break;
 		var word = commandWords.filter(filterId(KTAB[w]));
 		if (word.length == 0) {
-			commandWords.push(new CommandWord(KTAB[w]));
+			commandWords.push(new CommandWord(KTAB[w], ATAB[w]));
 			word[0] = commandWords[commandWords.length - 1];
 		}
 		vocabulary[ATAB[w]] = word[0];
@@ -106,7 +90,7 @@ function convert() {
 	
 	// items
 	for (var pt in PTEXT) {
-		index = PTEXT[pt];
+		index = +PTEXT[pt];
 		var first = index;
 		if (index == 0) continue;
 		// item
@@ -114,16 +98,16 @@ function convert() {
 			text += LINES[index].substr(8).trim() + '\n';
 			index++;
 		}
-		items.push(new Item(parseInt(pt), text.slice(0,-1)));
+		items[+pt] = new Item(+pt, text.slice(0,-1));
 		text = ''; // reset
 		// status messages
 		while (parseInt(LINES[index])%100 == 0) { // status message
 			var sIndex = index;
-			while (parseInt(LINES[index]) === parseInt(LINES[sIndex])) {
-				text += LINES[index-1].substr(8).trim() + '\n';
+			while (parseInt(LINES[index]) == parseInt(LINES[sIndex])) {
+				text += LINES[index].substr(8).trim() + '\n';
 				index++;
 			}
-			items[items.length-1].addStatus(int(parseInt(LINES[sIndex])/100), text.slice(0,-1));
+			items[+pt].addStatus(int(parseInt(LINES[sIndex])/100), text.slice(0,-1));
 			text = ''; // reset
 		}
 	}
@@ -139,11 +123,8 @@ function convert() {
 	// items (initial location)
 	for (var p in PLAC) {
 		if (PLAC[p] == 0) continue;
-		var item = items.filter(filterId(p))[0];
-		var loc1 = locations.filter(filterId(PLAC[p]))[0];
-		var loc2 = FIXD[p] > 0 ? locations.filter(filterId(FIXD[p]))[0] : {};
-		if (FIXD[p] == 0) item.setLocation(loc1);
-		else item.setLocation(loc1, loc2);
+		var item = items.filter(filterId(+p))[0];
+		item.setLocation(PLAC[p], FIXD[p]);
 	}
 	//console.log(items);
 	
@@ -164,6 +145,10 @@ function convert() {
 		if (cmd == 62 || cmd == 65) commandWords[act].setResponse(RTEXT[42]);
 		if (cmd == 17) commandWords[act].setResponse(RTEXT[80]);
 	}
+	for (var w in commandWords) {
+		if (commandWords[w].getId() < 3050) continue;
+		commandWords[w].setResponse(getMessage(RTEXT[commandWords[w].getId()%1000]));
+	}
 	//console.log(commandWords);
 	
 	// properties of locations
@@ -182,8 +167,22 @@ function convert() {
 		if (COND[c] & 512) loc.addProp(9); // witt hint
 	}
 	//console.log(locations);
-	//console.log(JSON.stringify(commandWords));
-	//console.log(JSON.stringify(vocabulary));
-	//console.log(JSON.stringifyOnce(items, undefined, 4));
-	console.log(JSON.stringify(JSON.decycle(items)));
+
+	
+	someTests();
+}
+
+function sayResponse(word) {
+	out(vocabulary[word].getResponse());
+}
+
+
+function someTests() {
+//	console.log(JSON.stringify(commandWords));
+//	console.log(JSON.stringify(vocabulary));
+//	console.log(JSON.stringify(items));
+//	console.log(JSON.stringify(locations));
+	sayResponse('HELP');
+	sayResponse('TAKE');
+	sayResponse('STEAL');
 }

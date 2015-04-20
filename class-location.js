@@ -2,7 +2,7 @@
  * Class Location
  */
 function Location(id, long) {
-	this.id = id;
+	this.id = id; // for reference (?)
 	this.longDescription = long;
 	this.shortDescription;
 	this.items = []; // dynamic list, drop & take

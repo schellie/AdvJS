@@ -8,7 +8,6 @@ function Exit(action, newLocation) {
 	//N=Y MOD 1000
 	//m = Math.floor(newLocation/1000);
 	//n = newLocation % 1000;
-	
 	this.condition = int(newLocation/1000); 
 	//C		IF M=0		IT'S UNCONDITIONAL.
 	//C		IF 0<M<100	IT IS DONE WITH M% PROBABILITY.
