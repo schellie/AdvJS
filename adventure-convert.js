@@ -1,10 +1,15 @@
-	// Arrays to hold the classes
-	var locations = [],
-		items = [], // holds the object, we call them items to avoid confusion with 'Object'
-		command = new Command(''),
-		responses = [], // rtext
-		classifications = [], // ctext
-		magic = []; // mtext
+// Arrays to hold the classes
+var locations = [],
+	items = [], // holds the object, we call them items to avoid confusion with 'Object'
+	command = new Command(''),
+	responses = [], // rtext
+	classifications = [], // ctext
+	magic = []; // mtext
+
+//For converting a JS object into a string, use
+//	JSON.stringify(obj);
+//For converting a string into a JS object, use
+//	JSON.parse(string);
 
 /**
  * Searches an array of objects and matches those object which have a property id with
@@ -177,5 +182,8 @@ function convert() {
 		if (COND[c] & 512) loc.addProp(9); // witt hint
 	}
 	//console.log(locations);
-	
+	//console.log(JSON.stringify(commandWords));
+	//console.log(JSON.stringify(vocabulary));
+	//console.log(JSON.stringifyOnce(items, undefined, 4));
+	console.log(JSON.stringify(JSON.decycle(items)));
 }
