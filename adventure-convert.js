@@ -41,29 +41,28 @@ function isObjectEmpty(object) {
 function convert() {
 
 	var	text = '', // merged text for long descriptions
-		i, index;
+		index;
+	
+	function getMessage(index) {
+		var start = index,
+			count = index,
+			text = '';
+		while (parseInt(LINES[count++]) == parseInt(LINES[start])) {
+			text += LINES[count-1].substr(8).trim() + '\n';
+		}
+		return text.slice(0,-1); // remove the very last '\n'
+	}
 	
 	// locations and their long descriptions
 	for (var lt in LTEXT) {
-		index = LTEXT[lt];
-		i = parseInt(lt);
-		if (index == 0) break;
-		while (parseInt(LINES[index++]) == parseInt(LINES[LTEXT[lt]])) {
-			text += LINES[index-1].substr(8).trim() + '\n';
-		}
-		locations[i] = new Location(i, text.slice(0,-1)); // remove the very last '\n'
-		text = ''; // reset
+		if (LTEXT[lt] == 0) break;
+		locations[parseInt(lt)] = new Location(parseInt(lt), getMessage(LTEXT[lt]));
 	}
 	
 	// short descriptions
 	for (var st in STEXT) {
-		index = STEXT[st];
-		if (index == 0) continue;
-		while (parseInt(LINES[index++]) == parseInt(LINES[STEXT[st]])) {
-			text += LINES[index-1].substr(8).trim() + '\n';
-		}
-		locations[parseInt(st)].setShort(text.slice(0,-1)); // remove the very last '\n'
-		text = ''; // reset
+		if (STEXT[st] == 0) continue;
+		locations[parseInt(st)].setShort(getMessage(STEXT[st]));
 	}
 	
 	// travels
@@ -121,13 +120,8 @@ function convert() {
 	
 	// responses (rtext)
 	for (var r in RTEXT) {
-		index = RTEXT[r];
-		if (index == 0) continue;
-		while (parseInt(LINES[index++]) == parseInt(LINES[RTEXT[r]])) {
-			text += LINES[index-1].substr(8).trim() + '\n';
-		}
-		responses[parseInt(r)] = text.slice(0,-1); // remove the very last '\n'
-		text = ''; // reset
+		if (RTEXT[r] == 0) continue;
+		responses[parseInt(r)] = getMessage(RTEXT[r]); // remove the very last '\n'
 	}
 	//console.log(responses);
 	
@@ -144,40 +138,21 @@ function convert() {
 	
 	// default response to CommandWord
 	for (var as in ACTSPK) {
-		i = parseInt(as);
-		index = RTEXT[ACTSPK[i]];
-		if (index == 0) continue;
-		while (parseInt(LINES[index++]) == parseInt(LINES[RTEXT[ACTSPK[i]]])) {
-			text += LINES[index-1].substr(8).trim() + '\n';
-		}
-		var wrd = commandWords.filter(filterId(2000 + i));
-		wrd[0].setResponse(text.slice(0,-1));
-		text = '';
+		if (RTEXT[ACTSPK[as]] == 0) continue;
+		var wrd = commandWords.filter(filterId(2000 + parseInt(as)));
+		wrd[0].setResponse(getMessage(RTEXT[ACTSPK[parseInt(as)]]));
 	}
 	// default response for action verbs is '12'
-	text = LINES[RTEXT[12]].substr(8).trim();
+	text = getMessage(RTEXT[12]);
 	for (var act in commandWords) {
-		if (commandWords[act].getId() < 1000) commandWords[act].setResponse(text);
+		var cmd = commandWords[act].getId();
+		if (cmd < 1000) commandWords[act].setResponse(text);
+		if ((cmd >= 43 && cmd <=50) || cmd == 29 || cmd == 30) commandWords[act].setResponse(RTEXT[9]);
+		if (cmd == 7 || cmd == 36 || cmd == 37) commandWords[act].setResponse(RTEXT[10]);
+		if (cmd == 11 || cmd == 19) commandWords[act].setResponse(RTEXT[11]);
+		if (cmd == 62 || cmd == 65) commandWords[act].setResponse(RTEXT[42]);
+		if (cmd == 17) commandWords[act].setResponse(RTEXT[80]);
 	}
-//	addResponse(43, 9);
-//	addResponse(44, 9);
-//	addResponse(45, 9);
-//	addResponse(46, 9);
-//	addResponse(47, 9);
-//	addResponse(48, 9);
-//	addResponse(49, 9);
-//	addResponse(50, 9);
-//	addResponse(29, 9);
-//	addResponse(30, 9);
-//	addResponse(7, 10);
-//	addResponse(36, 10);
-//	addResponse(37, 10);
-//	addResponse(11, 11);
-//	addResponse(19, 11);
-//	addResponse(62, 42);
-//	addResponse(65, 42);
-//	addResponse(17, 80);
-	
 	console.log(commandWords);
 	
 	
