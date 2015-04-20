@@ -10,6 +10,10 @@ function CommandWord(id) {
 	// this.defaultResponse = (this.type == WordType.MOTION) ? 12 : 0;
 } 
 
+CommandWord.prototype.getId = function() {
+	return this.id;
+};
+
 CommandWord.prototype.setResponse = function(message) {
 	this.response = message;
 };

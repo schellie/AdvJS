@@ -154,6 +154,30 @@ function convert() {
 		wrd[0].setResponse(text.slice(0,-1));
 		text = '';
 	}
+	// default response for action verbs is '12'
+	text = LINES[RTEXT[12]].substr(8).trim();
+	for (var act in commandWords) {
+		if (commandWords[act].getId() < 1000) commandWords[act].setResponse(text);
+	}
+//	addResponse(43, 9);
+//	addResponse(44, 9);
+//	addResponse(45, 9);
+//	addResponse(46, 9);
+//	addResponse(47, 9);
+//	addResponse(48, 9);
+//	addResponse(49, 9);
+//	addResponse(50, 9);
+//	addResponse(29, 9);
+//	addResponse(30, 9);
+//	addResponse(7, 10);
+//	addResponse(36, 10);
+//	addResponse(37, 10);
+//	addResponse(11, 11);
+//	addResponse(19, 11);
+//	addResponse(62, 42);
+//	addResponse(65, 42);
+//	addResponse(17, 80);
+	
 	console.log(commandWords);
 	
 	
