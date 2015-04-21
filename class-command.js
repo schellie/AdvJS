@@ -10,8 +10,8 @@ function Command(input) {
 	var WD1 = (this.word1 == '') ? 0 : this.word1.substr(0,5).toUpperCase();
 	var WD2 = (this.word2 == '') ? 0 : this.word2.substr(0,5).toUpperCase();
 	
-	this.cmd1 = (WD1 == 0) ? -1 : vocabulary(WD1,-1);
-	this.cmd2 = (WD2 == 0) ? -1 : vocabulary(WD2,-1);
+	this.cmd1 = (WD1 == 0) ? -1 : vocabulary[WD1].getId();
+	this.cmd2 = (WD2 == 0) ? -1 : vocabulary[WD2].getId();
 	
 	this.verb = this.cmd1 % 1000;
 	this.verbType = int(this.cmd1/1000); // make integer

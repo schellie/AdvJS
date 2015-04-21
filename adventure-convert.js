@@ -1,41 +1,49 @@
-// Arrays to hold the classes
-var locations = [],
-	items = [], // holds the object, we call them items to avoid confusion with 'Object'
-	command = new Command(''),
-	responses = [], // rtext
-	classifications = [], // ctext
-	magic = []; // mtext
 
 //For converting a JS object into a string, use
 //	JSON.stringify(obj);
 //For converting a string into a JS object, use
 //	JSON.parse(string);
 
-/**
- * Searches an array of objects and matches those object which have a property id with
- * the value 'id'
- * @param id value to search for
- * @return array of matching objects
- */
-function filterId(id) {
-	return function (element) {
-		if (element.id == id) return true; else return false;
-	};
+function startc() {
+	// initialize variables for I/O
+	commandLine = document.getElementById("commandLine");
+	displayText = document.getElementById('displayText');
+    // Install command line listener
+    commandLine.onkeypress = function(event) {
+    	if (event.keyCode == 13) processCommandc();
+    };
+	// read the 'old' database
+	initDatabase();
+    // and convert into classes
+	convert();
+	// start the game
+
+	player = new Player();
+	// describe the current location
+	out(player.look());
+	
+	// now wait for commands ...
 }
 
 /**
- * Read text from the LINES array
- * @param index starting index to read
- * @return string with (multi-line) message
+ * Main routine, users input is validated and acted upon
  */
-function getMessage(index) {
-	var start = index,
-		count = index,
-		text = '';
-	while (parseInt(LINES[count++]) == parseInt(LINES[start])) {
-		text += LINES[count-1].substr(8).trim() + '\n';
+function processCommandc() {
+	
+	player.newInput(commandLine.value);
+	
+	if (player.getFirstCmd() == -1) {
+		if (percent(20)) out('What?'); //61
+		else if (PCT(20)) out('I don\'t understand that!'); //13
+		else out('I don\'t know that word.'); //60
+		return;
 	}
-	return text.slice(0,-1); // remove the very last '\n'
+	else {
+		//actions[player.getFirstCmd()].action();
+		out('command: ' + player.getFirstCmd());
+	}
+
+	//updateStatusBar(SCORE, TURNS);
 }
 
 /**
@@ -78,15 +86,16 @@ function convert() {
 	// words
 	for (var w in KTAB) {
 		if (KTAB[w] < 0) break;
-		var word = commandWords.filter(filterId(KTAB[w]));
+		var word = actions.filter(filterId(KTAB[w]));
 		if (word.length == 0) {
-			commandWords.push(new CommandWord(KTAB[w], ATAB[w]));
-			word[0] = commandWords[commandWords.length - 1];
+			actions.push(new Action(KTAB[w], ATAB[w]));
+			word[0] = actions[actions.length - 1];
 		}
-		vocabulary[ATAB[w]] = word[0];
+		vocabulary[ATAB[w]] = actions.indexOf(word[0]);
+		// NOTE: will have no doubles (so FOO will be special, not action)
 	}
 	//console.log(commandWords);	
-	//console.log(vocabulary);	
+	console.log(vocabulary); 	
 	
 	// items
 	for (var pt in PTEXT) {
@@ -128,28 +137,28 @@ function convert() {
 	}
 	//console.log(items);
 	
-	// default response to CommandWord
+	// default response to Action
 	for (var as in ACTSPK) {
 		if (RTEXT[ACTSPK[as]] == 0) continue;
-		var wrd = commandWords.filter(filterId(2000 + (+as)));
+		var wrd = actions.filter(filterId(2000 + (+as)));
 		wrd[0].setResponse(getMessage(RTEXT[ACTSPK[parseInt(as)]]));
 	}
 	// default response for action verbs is '12'
 	text = getMessage(RTEXT[12]);
-	for (var act in commandWords) {
-		var cmd = commandWords[act].getId();
-		if (cmd < 1000) commandWords[act].setResponse(text);
-		if ((cmd >= 43 && cmd <=50) || cmd == 29 || cmd == 30) commandWords[act].setResponse(RTEXT[9]);
-		if (cmd == 7 || cmd == 36 || cmd == 37) commandWords[act].setResponse(RTEXT[10]);
-		if (cmd == 11 || cmd == 19) commandWords[act].setResponse(RTEXT[11]);
-		if (cmd == 62 || cmd == 65) commandWords[act].setResponse(RTEXT[42]);
-		if (cmd == 17) commandWords[act].setResponse(RTEXT[80]);
+	for (var act in actions) {
+		var cmd = actions[act].getId();
+		if (cmd < 1000) actions[act].setResponse(text);
+		if ((cmd >= 43 && cmd <=50) || cmd == 29 || cmd == 30) actions[act].setResponse(getMessage(RTEXT[9]));
+		if (cmd == 7 || cmd == 36 || cmd == 37) actions[act].setResponse(getMessage(RTEXT[10]));
+		if (cmd == 11 || cmd == 19) actions[act].setResponse(getMessage(RTEXT[11]));
+		if (cmd == 62 || cmd == 65) actions[act].setResponse(getMessage(RTEXT[42]));
+		if (cmd == 17) actions[act].setResponse(getMessage(RTEXT[80]));
 	}
-	for (var w in commandWords) {
-		if (commandWords[w].getId() < 3050) continue;
-		commandWords[w].setResponse(getMessage(RTEXT[commandWords[w].getId()%1000]));
+	for (var w in actions) {
+		if (actions[w].getId() < 3050) continue;
+		actions[w].setResponse(getMessage(RTEXT[actions[w].getId()%1000]));
 	}
-	//console.log(commandWords);
+	//console.log(actions);
 	
 	// properties of locations
 	for (var c in COND) {
@@ -169,7 +178,7 @@ function convert() {
 	//console.log(locations);
 
 	
-	someTests();
+	//someTests();
 }
 
 function sayResponse(word) {

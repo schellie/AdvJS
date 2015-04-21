@@ -19,3 +19,15 @@ function Exit(action, newLocation) {
 	//C		IF 500<M<=600	PROP(M MOD 100) MUST *NOT* BE 2, ETC.
 
 }
+
+Exit.prototype.getAction = function() {
+	return this.action;
+};
+
+Exit.prototype.getTarget = function() {
+	return this.target;
+};
+
+Exit.prototype.getCondition = function() {
+	return this.condition;
+};

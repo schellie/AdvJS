@@ -145,10 +145,7 @@ var START;
 
 var gameOver = false;
 
-// I/O for html/js
-var isTouch = (('ontouchstart' in window) || (navigator.msMaxTouchPoints > 0)); // touch device?
-var displayText; // area to output messages
-var commandLine; // area to input commands
+
 // globals holding 1st 2 words of input
 var gWord1 = '';
 var gWord2 = '';
@@ -160,24 +157,28 @@ var VERB; // 'translated' word1
 var OBJ;  // 'translated' word2
 
 
-
+var classic = false;
 
 function startup() {
-	// initialize variables for I/O
-	commandLine = document.getElementById("commandLine");
-	displayText = document.getElementById('displayText');
-    // Install command line listener
-    commandLine.onkeypress = function(event) {
-        if (event.keyCode == 13) processCommand();
-    };
 	
-	out('Initializing...');
-	// read the database
-	initDatabase();
-
-	out('INIT Done');
-
-	start();
+	if (classic) {
+		// initialize variables for I/O
+		commandLine = document.getElementById("commandLine");
+		displayText = document.getElementById('displayText');
+	    // Install command line listener
+	    commandLine.onkeypress = function(event) {
+	    	if (event.keyCode == 13) processCommand();
+	    };
+		
+		out('Initializing...');
+		// read the database
+		initDatabase();
+		out('INIT Done');
+		
+		start();
+	}
+	else
+		startc();
 }
 
 function start() {
@@ -279,36 +280,13 @@ function start() {
 //		CALL GETIN(WD1,WD1X,WD2,WD2X) 
 }
 
-
-/**
- * int - convert to integer number (used for divisions)
- * @param a number to convert
- * @return integer number
- */
-function int(a) { 
-	return ((a)>>0); 
-}
-
-//Display a string 
-function out(s) { /** test ok **/
-	var displayText;
-	displayText = document.getElementById('displayText');
-	displayText.value += s + '\n';
-	displayText.scrollTop = displayText.scrollHeight;
-}
-
-//Update the status bar
-function updateStatusBar(score, moves) { /** test ok **/
-	document.getElementById('statusScore').innerHTML = score;
-	document.getElementById('statusMoves').innerHTML = moves;
-}
-
 /**
  * getCommand - process the input from the user and store the commands
  * @return true if a know command was given
  */
 function getCommand() {
 	var text = commandLine.value;
+	
 	var words = text.match(/\S+/g) || [];
 	
 	commandLine.value = '';
@@ -437,7 +415,7 @@ function processMove() {
 	OLDLOC = LOC;
 	
 	// find traveloption
-	index = KEY[loc];
+	index = KEY[LOC];
 	while (true) {
 		travelVerb = Math.abs(TRAVEL[index]) % 1000;
         if (commandVerb == travelVerb) {
@@ -959,8 +937,6 @@ function initDatabase() {
 	// FINALLY, SINCE WE'RE CLEARLY SETTING THINGS UP FOR THE FIRST TIME...
 	POOF();
 
-    // additionally start conversion to classes
-	convert();
 }
 
 // SECTIONS 1, 2, 5, 6, 10, 12.  READ MESSAGES AND SET UP POINTERS.

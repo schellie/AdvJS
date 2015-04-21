@@ -11,29 +11,12 @@ function Location(id, long) {
 		cave:false, bird:false, snake:false, maze:false, dkroom:false, witt:false};
 }
 
-Location.prototype.setLong = function(description) {
-	this.longDescription = description;
-};
-
 Location.prototype.setShort = function(description) {
 	this.shortDescription = description;
 };
 
 Location.prototype.addExit = function(exit) {
 	this.exits.push(exit);
-};
-
-Location.prototype.drop = function(item) {
-	this.items.push(item);
-};
-
-Location.prototype.take = function(item) {
-	var index = this.items.indexOf(item);
-	this.items.splice(index, 1);
-};
-
-Location.prototype.look = function() {
-	return this.longDescription;
 };
 
 Location.prototype.addProp = function(prop) { // this is initialisation only
@@ -52,17 +35,55 @@ Location.prototype.addProp = function(prop) { // this is initialisation only
 	if (prop == 8) this.props.dkroom = true; // 8 = darkroom hint
 	if (prop == 9) this.props.witt = true; // 9 = witt's end hint
 };
+
+Location.prototype.drop = function(item) {
+	this.items.push(item);
+};
+
+Location.prototype.take = function(item) {
+	var index = this.items.indexOf(item);
+	this.items.splice(index, 1);
+};
+
+Location.prototype.look = function() {
+	return this.longDescription;
+};
+
 Location.prototype.hasProp = function(prop) { 
 	return this.props[prop];
 };
 
-
 Location.prototype.countItems = function() {
-	return this.itemList.length;
+	return this.items.length;
 };
+
 Location.prototype.getItems = function() {
-	return this.itemList;
+	return this.items;
 };
+
 Location.prototype.hasItem = function(item) {
-	return (this.itemList.indexOf(item) !== 0);
+	return (this.items.indexOf(item) !== 0);
+};
+
+Location.prototype.move = function(direction) {
+	var newloc = -1;
+	this.exits.forEach(function (element, index) {
+		if (element.getAction() == direction) {
+			newloc = element.getTarget();
+			// check conditions here to validate newloc
+		}
+	});
+	return newloc;
+};
+
+
+var move = function(direction) {
+	var newloc = -1;
+	this.exits.forEach(function (element, index) {
+		if (element.getAction() == direction) {
+			newloc = element.getTarget();
+			// check conditions here to validate newloc
+		}
+	});
+	return newloc;
 };
