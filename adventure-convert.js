@@ -41,6 +41,7 @@ function processCommandc() {
 	else {
 		//actions[player.getFirstCmd()].action();
 		out('command: ' + player.getFirstCmd());
+		actions[player.getFirstCmd()].action(player);
 	}
 
 	//updateStatusBar(SCORE, TURNS);

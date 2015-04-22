@@ -8,6 +8,7 @@ function Action(id, word) {
 	switch (this.type) {
 	case 0: 
 		//this.action = player.move(player); // closure
+		this.action = player.move;
 		break;
 	case 1:
 		//this.action = processObject;

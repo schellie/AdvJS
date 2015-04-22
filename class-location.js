@@ -65,21 +65,11 @@ Location.prototype.hasItem = function(item) {
 	return (this.items.indexOf(item) !== 0);
 };
 
-Location.prototype.move = function(direction) {
+Location.prototype.move = function() {
+	var that = this;
 	var newloc = -1;
-	this.exits.forEach(function (element, index) {
-		if (element.getAction() == direction) {
-			newloc = element.getTarget();
-			// check conditions here to validate newloc
-		}
-	});
-	return newloc;
-};
-
-
-var move = function(direction) {
-	var newloc = -1;
-	this.exits.forEach(function (element, index) {
+	var direction = 44; // test
+	that.exits.forEach(function (element, index) {
 		if (element.getAction() == direction) {
 			newloc = element.getTarget();
 			// check conditions here to validate newloc

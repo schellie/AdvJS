@@ -25,8 +25,6 @@ function int(a) { return ((a)>>0); }
  * @param s string to display
  */
 function out(s) {
-	var displayText;
-	displayText = document.getElementById('displayText');
 	displayText.value += s + '\n';
 	displayText.scrollTop = displayText.scrollHeight;
 }
