@@ -1,8 +1,7 @@
 /**
- * Class Location
+ * Class Room
  */
-function Location(id, long) {
-	this.id = id; // for reference (?)
+function Room(long) {
 	this.longDescription = long;
 	this.shortDescription;
 	this.items = []; // dynamic list, drop & take
@@ -11,15 +10,20 @@ function Location(id, long) {
 		cave:false, bird:false, snake:false, maze:false, dkroom:false, witt:false};
 }
 
-Location.prototype.setShort = function(description) {
-	this.shortDescription = description;
+Room.prototype.setShort = function(description) { this.shortDescription = description; };
+Room.prototype.addExit = function(exit) { this.exits.push(exit); };
+Room.prototype.take = function(i) { this.items.splice(this.items.indexOf(i), 1); };
+Room.prototype.drop = function(i) { this.items.push(i); };
+Room.prototype.look = function() { return this.longDescription; };
+Room.prototype.lookItems = function() { 
+	var s = '';
+	for (i of this.item) s += i.getStatus(); 
 };
-
-Location.prototype.addExit = function(exit) {
-	this.exits.push(exit);
-};
-
-Location.prototype.addProp = function(prop) { // this is initialisation only
+Room.prototype.hasProp = function(prop) { return this.props[prop]; };
+Room.prototype.countItems = function() { return this.items.length; };
+Room.prototype.getItems = function() { return this.items; };
+Room.prototype.here = function(i) { return (this.items.indexOf(i) !== 0); };
+Room.prototype.addProp = function(prop) { // this is initialisation only
 	// prop is in range 0-9
 	if (prop == 0) this.props.light = true; // 0 = light
 	if (prop == 1) { // the liquid prop is read first, so we turn water to false (and it stays that way)
@@ -35,37 +39,7 @@ Location.prototype.addProp = function(prop) { // this is initialisation only
 	if (prop == 8) this.props.dkroom = true; // 8 = darkroom hint
 	if (prop == 9) this.props.witt = true; // 9 = witt's end hint
 };
-
-Location.prototype.drop = function(item) {
-	this.items.push(item);
-};
-
-Location.prototype.take = function(item) {
-	var index = this.items.indexOf(item);
-	this.items.splice(index, 1);
-};
-
-Location.prototype.look = function() {
-	return this.longDescription;
-};
-
-Location.prototype.hasProp = function(prop) { 
-	return this.props[prop];
-};
-
-Location.prototype.countItems = function() {
-	return this.items.length;
-};
-
-Location.prototype.getItems = function() {
-	return this.items;
-};
-
-Location.prototype.hasItem = function(item) {
-	return (this.items.indexOf(item) !== 0);
-};
-
-Location.prototype.move = function() {
+Room.prototype.move = function() {
 	var that = this;
 	var newloc = -1;
 	var direction = 44; // test

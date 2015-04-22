@@ -1,11 +1,11 @@
 
-var player = {},
-	locations = new Array(),
+var locations = new Array(),
 	items = new Array(),
+	vocabulary = new Array(),
 	responses = new Array(), // rtext
 	classifications = new Array, // ctext
 	magic = new Array(), // mtext
-	vocabulary = new Array(),
+	
 	actions = new Array();
 
 // I/O for html/js
