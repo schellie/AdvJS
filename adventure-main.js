@@ -464,7 +464,7 @@ function processMove() {
  */
 function checkCondition(condition) {
     var object = condition % 100;
-    if (condition == 0) return true;
+    if (condition === 0) return true;
     if (condition <= 100) return PCT(condition);
     if (condition <= 200) return TOTING(object);
     if (condition <= 300) return TOTING(object) || AT(object);
@@ -487,7 +487,7 @@ function specialMotions(newLoc, index) {
 	// BE USED FOR ACTUAL MOTION, BUT CAN BE SPOTTED BY "GO BACK".
 	if (newLoc == 301) {
 		newLoc = 99 + 100 - LOC;
-		if (HOLDNG != 0 && (HOLDNG != 1 || !TOTING(EMRALD))) {
+		if (HOLDNG !== 0 && (HOLDNG != 1 || !TOTING(EMRALD))) {
 			newLoc = LOC;
 			RSPEAK(117);
 			/* Something you're carrying won't fit through the tunnel with you.

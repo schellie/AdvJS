@@ -1,12 +1,12 @@
 
-var locations = new Array(),
-	items = new Array(),
-	vocabulary = new Array(),
-	responses = new Array(), // rtext
-	classifications = new Array, // ctext
-	magic = new Array(), // mtext
+var rooms = [],
+	items = [],
+	vocabulary = [],
+	responses = [], // rtext
+	classifications = [], // ctext
+	magic = [], // mtext
 	
-	actions = new Array();
+	actions = [];
 
 // I/O for html/js
 var isTouch = (('ontouchstart' in window) || (navigator.msMaxTouchPoints > 0)), // touch device?
